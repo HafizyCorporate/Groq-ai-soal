@@ -6,71 +6,53 @@ const fs = require("fs");
 const db = require("../db");
 
 const router = express.Router();
-const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const uploadDir = path.join(__dirname,"../uploads");
+if(!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const upload = multer({ dest: uploadDir });
 
-router.post("/process", upload.array("foto"), async (req, res) => {
+router.post("/process", upload.array("foto"), async (req,res)=>{
   try {
-    if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
-    if (!req.files || req.files.length === 0)
-      return res.status(400).json({ error: "Foto wajib diupload" });
+    if(!req.session.user) return res.status(401).json({error:"Login dulu"});
+    if(!req.files || req.files.length===0) return res.status(400).json({error:"Foto wajib diupload"});
 
-    const jumlahSoal = req.body.jumlah || 10;
-    const jenisSoal = req.body.jenis || "Pilihan Ganda";
+    const jumlah = req.body.jumlah || 10;
+    const jenis = req.body.jenis || "Pilihan Ganda";
 
-    const fotoListText = req.files.map((f, idx) => `Foto ${idx+1}: ${f.path}`).join("\n");
+    const fotoList = req.files.map((f,i)=>`Foto ${i+1}: ${f.path}`).join("\n");
 
     const prompt = `
-Buat persis ${jumlahSoal} soal ${jenisSoal} dari semua foto berikut:
-${fotoListText}
+Buat ${jumlah} soal ${jenis} dari semua foto berikut:
+${fotoList}
 
 Aturan:
-- PG jangan sertakan jawaban di tengah
-- Essay tulis nomor urut
-- Jawaban PG dan Essay ditulis di akhir halaman
-- Spasi antar soal rapat ke pilihan, beri jarak setelah pilihan terakhir ke soal berikutnya
-Format:
-Soal dan Jawaban bersih, jangan sertakan ===SOAL=== atau ===JAWABAN===
+- Soal bergambar: tampilkan gambar di atas soal
+- Pilihan PG rapat ke soal
+- Jawaban di akhir halaman
+- Jangan sertakan ===SOAL=== atau ===JAWABAN===
 `;
 
-    const aiResponse = await axios.post(
+    const aiResp = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
-      {
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: prompt }]
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
+      { model:"llama-3.1-8b-instant", messages:[{role:"user",content:prompt}] },
+      { headers:{ Authorization:`Bearer ${process.env.GROQ_API_KEY}`, "Content-Type":"application/json"} }
     );
 
-    let hasil = aiResponse.data.choices[0].message.content || "";
-
-    // hapus tag jika ada
+    let hasil = aiResp.data.choices[0].message.content || "";
     hasil = hasil.replace(/===SOAL===/g,"").replace(/===JAWABAN===/g,"").trim();
-
-    // Simpan ke DB history
-    db.run(
-      "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
-      [req.session.user.id, hasil, hasil],
-      err => { if(err) console.error(err); }
-    );
 
     const wordFileName = `export-${Date.now()}.docx`;
     const wordFilePath = path.join(uploadDir, wordFileName);
-    fs.writeFileSync(wordFilePath, ""); // placeholder, nanti export.js buat Word
+    fs.writeFileSync(wordFilePath,""); // nanti export.js handle Word
 
-    res.json({ hasil, wordFile: `/uploads/${wordFileName}` });
+    db.run(
+      "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
+      [req.session.user.id, hasil, hasil],
+      err=>{ if(err) console.error(err); }
+    );
 
-  } catch(err) {
-    console.error(err);
-    res.status(500).json({ error: "Gagal memproses AI" });
-  }
+    res.json({hasil, jawaban:"", wordFile:`/uploads/${wordFileName}`});
+  } catch(err){ console.error(err); res.status(500).json({error:"Gagal memproses AI"});}
 });
 
 module.exports = router;
