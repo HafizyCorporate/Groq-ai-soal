@@ -11,12 +11,14 @@ router.post("/process", upload.single("foto"), async (req, res) => {
     const prompt = `
 Buat ${req.body.jumlah} soal ${req.body.jenis}
 
-Pisahkan output dengan format:
+ATURAN OUTPUT (WAJIB):
 ===SOAL===
-(isi soal)
+- Tulis soal pilihan ganda terlebih dahulu
+- Setelah itu soal essay
 
 ===JAWABAN===
-(isi jawaban)
+- Kunci jawaban pilihan ganda (contoh: 1. A)
+- Setelah itu jawaban essay
 `
 
     const response = await axios.post(
@@ -24,7 +26,7 @@ Pisahkan output dengan format:
       {
         model: "llama-3.1-8b-instant",
         messages: [
-          { role: "system", content: "Kamu adalah AI pembuat soal pendidikan." },
+          { role: "system", content: "Kamu adalah AI pembuat soal ujian sekolah." },
           { role: "user", content: prompt }
         ],
         temperature: 0.3
@@ -38,21 +40,27 @@ Pisahkan output dengan format:
       }
     )
 
-    const hasil = response.data.choices[0].message.content
+    const raw = response.data.choices[0].message.content
+
+    const soal =
+      raw.split("===SOAL===")[1]?.split("===JAWABAN===")[0]?.trim() || ""
+
+    const jawaban =
+      raw.split("===JAWABAN===")[1]?.trim() || ""
 
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
-      [req.session.user.id, hasil, hasil]
+      [req.session.user.id, soal, jawaban]
     )
 
-    res.json({ success: true, hasil })
-
+    res.json({
+      success: true,
+      soal,
+      jawaban
+    })
   } catch (err) {
     console.error("GROQ ERROR:", err.response?.data || err.message)
-    res.status(500).json({
-      success: false,
-      message: "Gagal memproses AI"
-    })
+    res.status(500).json({ success: false })
   }
 })
 
