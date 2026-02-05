@@ -28,7 +28,7 @@ textarea { resize: vertical; }
 .btn:hover { background:#ddd; }
 .btn-green { background:#28a745; color:#fff; }
 .btn-green:hover { background:#218838; }
-#fileName { font-size:0.9rem; color:#555; }
+#fileName { font-size:0.9rem; color:#555; margin-top:5px; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 /* Tombol print/export lebih besar */
 .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
@@ -59,13 +59,14 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
   </select>
 
   <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
+
   <button type="submit" class="btn-green">🚀 Proses ke AI</button>
 </form>
 
 <hr>
 
 <h3>Soal</h3>
-<textarea id="soal" rows="15" readonly></textarea>
+<textarea id="soal" rows="10" readonly></textarea>
 
 <h3>Jawaban</h3>
 <textarea id="jawaban" rows="10" readonly></textarea>
@@ -81,18 +82,22 @@ const foto = document.getElementById("foto");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
+let currentHistoryId = null;
 
+// Tampilkan nama file
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
     fileName.textContent = "File: " + foto.files[0].name;
-  } else { fileName.textContent = ""; }
+  } else {
+    fileName.textContent = "";
+  }
 });
 
+// Submit form ke AI
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(e.target);
 
-  // Reset textarea
   soalArea.value = "Sedang memproses AI... ⏳";
   jawabanArea.value = "";
 
@@ -101,19 +106,15 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
     const data = await res.json();
 
     if(data.hasil){
-      // Pastikan split soal & jawaban aman
       const parts = data.hasil.split("===JAWABAN===");
-      soalArea.value = (parts[0] || "").replace("===SOAL===","").trim();
-      jawabanArea.value = (parts[1] || "").trim();
-
-      // Simpan nama file Word dari backend
-      window.wordFile = data.wordFile || null;
+      soalArea.value = (parts[0]||"").replace("===SOAL===","").trim();
+      jawabanArea.value = (parts[1]||"").trim();
+      currentHistoryId = data.historyId;
     } else {
       soalArea.value = "";
       jawabanArea.value = "";
       alert("Gagal memproses AI");
     }
-
   } catch(err){
     soalArea.value = "";
     jawabanArea.value = "";
@@ -122,42 +123,20 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
   }
 });
 
+// Tombol print
 function printPage(){ window.print(); }
 
-let currentHistoryId = null;
-
-document.getElementById("aiForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  soalArea.value = "Sedang memproses AI...";
-  jawabanArea.value = "";
-
-  try {
-    const res = await fetch("/ai/process", { method:"POST", body: formData });
-    const data = await res.json();
-    if(data.hasil){
-      const parts = data.hasil.split("===JAWABAN===");
-      soalArea.value = (parts[0] || "").replace("===SOAL===","").trim();
-      jawabanArea.value = (parts[1] || "").trim();
-
-      currentHistoryId = data.historyId;
-    } else {
-      alert("Gagal memproses AI");
-    }
-  } catch(err){
-    console.error(err);
-    alert("Terjadi kesalahan AI");
-  }
-});
-
+// Tombol export Word
 document.getElementById("exportWordBtn").addEventListener("click", async () => {
   if(!currentHistoryId){
     alert("Proses AI dulu sebelum export Word");
     return;
   }
+
   try {
     const res = await fetch("/export/" + currentHistoryId);
     const data = await res.json();
+
     if(data.wordFile){
       const link = document.createElement("a");
       link.href = data.wordFile;
@@ -169,11 +148,10 @@ document.getElementById("exportWordBtn").addEventListener("click", async () => {
       alert("Gagal generate Word");
     }
   } catch(err){
-    console.error(err);
+    console.error("Export Word error:", err);
     alert("Terjadi kesalahan saat export Word");
   }
 });
-  
 </script>
 </body>
 </html>
