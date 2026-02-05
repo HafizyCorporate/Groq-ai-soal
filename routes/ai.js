@@ -7,6 +7,7 @@ const db = require("../db");
 
 const router = express.Router();
 
+// Upload folder
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -14,8 +15,8 @@ const upload = multer({ dest: uploadDir });
 
 router.post("/process", upload.single("foto"), async (req, res) => {
   try {
-    if(!req.session.user) return res.status(401).json({ error: "Login dulu" });
-    if(!req.file) return res.status(400).json({ error: "Foto wajib diupload" });
+    if(!req.session.user) return res.status(401).json({ error:"Login dulu" });
+    if(!req.file) return res.status(400).json({ error:"Foto wajib diupload" });
 
     const jumlahSoal = req.body.jumlah || 5;
     const jenisSoal = req.body.jenis || "Pilihan Ganda";
@@ -33,7 +34,7 @@ Format:
 
     const ai = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
-      { model: "llama-3.1-8b-instant", messages:[{role:"user", content:prompt}] },
+      { model:"llama-3.1-8b-instant", messages:[{ role:"user", content:prompt }] },
       { headers:{ Authorization:`Bearer ${process.env.GROQ_API_KEY}`, "Content-Type":"application/json" } }
     );
 
@@ -43,14 +44,12 @@ Format:
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
       [req.session.user.id, hasil, hasil],
       function(err){
-        if(err) console.error(err);
+        if(err){
+          console.error(err);
+          return res.status(500).json({ error:"Gagal simpan history" });
+        }
 
-        res.json({
-          hasil,
-          soal: hasil.split("===JAWABAN===")[0].replace("===SOAL===","").trim(),
-          jawaban: hasil.split("===JAWABAN===")[1]?.trim() || "",
-          historyId: this.lastID
-        });
+        res.json({ hasil, historyId: this.lastID });
       }
     );
 
