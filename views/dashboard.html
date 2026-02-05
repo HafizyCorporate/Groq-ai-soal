@@ -1,59 +1,101 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard | AI Soal Foto</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8" />
+  <title>Groq AI Soal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
 
 <div class="container">
-
   <h1>Otomatis jawab soalmu via foto</h1>
 
-  <form id="form" enctype="multipart/form-data" class="card">
-    <label class="file-btn">
+  <!-- FORM -->
+  <form id="aiForm">
+    <label class="btn-file">
       📷 Ambil Foto / Pilih Gambar
-      <input type="file" name="foto" accept="image/*" required hidden>
+      <input type="file" id="foto" name="foto" accept="image/*" required hidden />
     </label>
+
+    <!-- PREVIEW -->
+    <img id="preview" style="display:none;max-width:100%;margin-top:10px;border-radius:8px"/>
 
     <select name="jenis" required>
       <option value="">Jenis Soal</option>
-      <option value="essay">Essay</option>
-      <option value="pilihan ganda">Pilihan Ganda</option>
+      <option value="Pilihan Ganda">Pilihan Ganda</option>
+      <option value="Essay">Essay</option>
+      <option value="Pilihan Ganda dan Essay">Pilihan Ganda & Essay</option>
     </select>
 
-    <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
+    <input type="number" name="jumlah" placeholder="Jumlah Soal" required />
 
-    <button id="btnProses" type="submit">🚀 Proses ke AI</button>
+    <button type="submit">🚀 Proses ke AI</button>
   </form>
 
   <!-- LOADING -->
-  <div id="loading" class="loading hidden">
-    <div class="spinner"></div>
-    <p>AI sedang memproses...</p>
+  <div id="loading" style="display:none;margin-top:10px">
+    ⏳ Memproses AI...
   </div>
 
-  <!-- HASIL -->
-  <div class="card">
-    <h3>Soal</h3>
-    <textarea id="soal" readonly></textarea>
+  <!-- OUTPUT -->
+  <h3>Soal</h3>
+  <textarea id="soal" rows="10"></textarea>
 
-    <h3>Jawaban</h3>
-    <textarea id="jawaban" readonly></textarea>
-  </div>
-
-  <!-- ACTION -->
-  <div class="action">
-    <button onclick="exportWord()">📄 Export Word</button>
-    <button onclick="window.print()">🖨️ Print</button>
-  </div>
-
-  <p class="footer">Terimakasih, jangan lupa donasi 🙏</p>
-
+  <h3>Jawaban</h3>
+  <textarea id="jawaban" rows="10"></textarea>
 </div>
 
-<script src="/js/app.js"></script>
+<script>
+const fotoInput = document.getElementById("foto")
+const preview = document.getElementById("preview")
+const form = document.getElementById("aiForm")
+const loading = document.getElementById("loading")
+
+// PREVIEW FOTO
+fotoInput.addEventListener("change", () => {
+  const file = fotoInput.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = e => {
+    preview.src = e.target.result
+    preview.style.display = "block"
+  }
+  reader.readAsDataURL(file)
+})
+
+// SUBMIT KE AI
+form.addEventListener("submit", async e => {
+  e.preventDefault()
+
+  const formData = new FormData(form)
+
+  loading.style.display = "block"
+
+  try {
+    const res = await fetch("/ai/process", {
+      method: "POST",
+      body: formData
+    })
+
+    const data = await res.json()
+
+    if (!data.success) {
+      alert("Gagal memproses AI")
+      return
+    }
+
+    document.getElementById("soal").value = data.soal
+    document.getElementById("jawaban").value = data.jawaban
+  } catch (err) {
+    alert("Error koneksi server")
+  } finally {
+    loading.style.display = "none"
+  }
+})
+</script>
+
 </body>
 </html>
