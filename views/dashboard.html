@@ -1,23 +1,59 @@
-<h1>Otomatis jawab soalmu via foto</h1>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | AI Soal Foto</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
 
-<form id="form" enctype="multipart/form-data">
-  <input type="file" name="foto" required>
-  <select name="jenis">
-    <option value="essay">Essay</option>
-    <option value="pilihan ganda">Pilihan Ganda</option>
-  </select>
-  <input name="jumlah" type="number" required>
-  <button id="btnProses">Proses AI</button>
-</form>
+<div class="container">
 
-<div id="loading" class="hidden">
-  <div class="spinner"></div>
-  <p>AI sedang memproses...</p>
+  <h1>Otomatis jawab soalmu via foto</h1>
+
+  <form id="form" enctype="multipart/form-data" class="card">
+    <label class="file-btn">
+      📷 Ambil Foto / Pilih Gambar
+      <input type="file" name="foto" accept="image/*" required hidden>
+    </label>
+
+    <select name="jenis" required>
+      <option value="">Jenis Soal</option>
+      <option value="essay">Essay</option>
+      <option value="pilihan ganda">Pilihan Ganda</option>
+    </select>
+
+    <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
+
+    <button id="btnProses" type="submit">🚀 Proses ke AI</button>
+  </form>
+
+  <!-- LOADING -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <p>AI sedang memproses...</p>
+  </div>
+
+  <!-- HASIL -->
+  <div class="card">
+    <h3>Soal</h3>
+    <textarea id="soal" readonly></textarea>
+
+    <h3>Jawaban</h3>
+    <textarea id="jawaban" readonly></textarea>
+  </div>
+
+  <!-- ACTION -->
+  <div class="action">
+    <button onclick="exportWord()">📄 Export Word</button>
+    <button onclick="window.print()">🖨️ Print</button>
+  </div>
+
+  <p class="footer">Terimakasih, jangan lupa donasi 🙏</p>
+
 </div>
 
-<textarea id="soal"></textarea>
-<textarea id="jawaban"></textarea>
-
-<button onclick="exportWord()">Export Word</button>
-
 <script src="/js/app.js"></script>
+</body>
+</html>
