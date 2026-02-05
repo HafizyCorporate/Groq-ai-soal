@@ -1,33 +1,31 @@
-document.getElementById("form").onsubmit = async e => {
+form.onsubmit = async e => {
   e.preventDefault()
-  const form = new FormData(e.target)
+  loading.classList.remove("hidden")
+  btnProses.disabled = true
 
   const res = await fetch("/ai/process", {
-    method: "POST",
-    body: form
+    method:"POST",
+    body:new FormData(form)
   })
-
   const data = await res.json()
-  const [soal, jawaban] = data.hasil.split("===JAWABAN===")
 
-  document.getElementById("soal").value =
-    soal.replace("===SOAL===", "").trim()
-  document.getElementById("jawaban").value = jawaban.trim()
+  const split = data.hasil.split("===JAWABAN===")
+  soal.value = split[0]
+  jawaban.value = split[1]
+
+  loading.classList.add("hidden")
+  btnProses.disabled = false
 }
 
-async function exportWord() {
-  const soal = document.getElementById("soal").value
-  const jawaban = document.getElementById("jawaban").value
-
-  const res = await fetch("/ai/word", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ soal, jawaban })
+function exportWord(){
+  fetch("/export/word",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ soal:soal.value, jawaban:jawaban.value })
+  }).then(r=>r.blob()).then(b=>{
+    const a=document.createElement("a")
+    a.href=URL.createObjectURL(b)
+    a.download="hasil.docx"
+    a.click()
   })
-
-  const blob = await res.blob()
-  const a = document.createElement("a")
-  a.href = URL.createObjectURL(blob)
-  a.download = "soal.docx"
-  a.click()
 }
