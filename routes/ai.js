@@ -11,12 +11,11 @@ router.post("/generate", upload.array("photos"), async (req, res) => {
     const files = req.files;
     if (!files || files.length === 0) return res.status(400).json({ error: "Tidak ada foto diupload" });
 
-    // Dummy AI generate soal dari foto
     let soal = "";
     files.forEach((file, idx) => {
       soal += `${idx+1}) Apa objek pada Foto ${idx+1}?\nA. Opsi 1\nB. Opsi 2\nC. Opsi 3\nD. Opsi 4\n\n`;
     });
-    soal += "Jawaban:\n1) A\n2) B\n3) C\n"; // contoh jawaban
+    soal += "Jawaban:\n1) A\n2) B\n3) C\n";
 
     const filename = `soal-${Date.now()}.txt`;
     fs.writeFileSync(path.join(__dirname, "../uploads", filename), soal);
