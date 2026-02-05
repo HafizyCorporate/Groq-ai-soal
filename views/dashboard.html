@@ -28,7 +28,7 @@ textarea { resize: vertical; }
 .btn:hover { background:#ddd; }
 .btn-green { background:#28a745; color:#fff; }
 .btn-green:hover { background:#218838; }
-#fileName { font-size:0.9rem; color:#555; }
+#fileName { font-size:0.9rem; color:#555; margin:5px 0; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 
 /* Tombol print/export lebih besar */
@@ -93,9 +93,7 @@ const aiForm = document.getElementById("aiForm");
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
     fileName.textContent = "File: " + foto.files[0].name;
-  } else {
-    fileName.textContent = "";
-  }
+  } else fileName.textContent = "";
 });
 
 // Submit form → proses AI
@@ -112,22 +110,19 @@ aiForm.addEventListener("submit", async e => {
     const data = await res.json();
 
     if(data.soal && data.jawaban){
-      // Pisah textarea soal & jawaban
-      soalArea.value = data.soal.trim();
-      jawabanArea.value = data.jawaban.trim();
-
-      // Simpan historyId untuk export Word
-      window.historyId = data.historyId;
+      soalArea.value = data.soal;
+      jawabanArea.value = data.jawaban;
+      window.historyId = data.historyId; // Untuk export Word
     } else {
-      soalArea.value = "";
-      jawabanArea.value = "";
+      soalArea.value="";
+      jawabanArea.value="";
       alert("Gagal memproses AI");
     }
 
   } catch(err){
     console.error(err);
-    soalArea.value = "";
-    jawabanArea.value = "";
+    soalArea.value="";
+    jawabanArea.value="";
     alert("Terjadi kesalahan AI");
   }
 });
@@ -138,12 +133,11 @@ function printPage(){ window.print(); }
 // Tombol Export Word
 document.getElementById("exportWordBtn").addEventListener("click", () => {
   if(window.historyId){
-    window.location.href = "/export/word/"+window.historyId;
+    window.location.href = "/export/word/" + window.historyId;
   } else {
     alert("Belum ada file Word, proses AI dulu");
   }
 });
 </script>
-
 </body>
 </html>
