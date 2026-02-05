@@ -23,12 +23,14 @@ input[type="number"], select, textarea {
   width: 100%; padding: 10px; border-radius:5px; border:1px solid #ccc; font-size:1rem;
 }
 textarea { resize: vertical; }
-.btn, .btn-green { display:inline-block; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; font-size:1rem; text-align:center; }
+.btn, .btn-green, .btn-blue { display:inline-block; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; font-size:1rem; text-align:center; }
 .btn { background:#eee; color:#333; }
 .btn:hover { background:#ddd; }
 .btn-green { background:#28a745; color:#fff; }
 .btn-green:hover { background:#218838; }
-#fileName { font-size:0.9rem; color:#555; }
+.btn-blue { background:#007bff; color:#fff; }
+.btn-blue:hover { background:#0056b3; }
+#fileName { font-size:0.9rem; color:#555; margin-bottom:5px; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 /* Tombol print/export lebih besar */
 .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
@@ -45,10 +47,21 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 <h1>Otomatis jawab soalmu via foto</h1>
 
 <form id="aiForm" enctype="multipart/form-data">
-  <label class="btn">
-    📷 Ambil Foto / Pilih Gambar
-    <input type="file" name="foto" id="foto" accept="image/*" capture="environment" multiple required>
-  </label>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+    <!-- Tombol ambil dari kamera HP -->
+    <label class="btn btn-green">
+      📷 Ambil Foto
+      <input type="file" id="fotoCamera" accept="image/*" capture="environment" style="display:none" multiple>
+    </label>
+
+    <!-- Tombol ambil dari media/galeri -->
+    <label class="btn btn-blue">
+      🖼️ Pilih dari Media
+      <input type="file" id="fotoMedia" accept="image/*" style="display:none" multiple>
+    </label>
+  </div>
+
   <div id="fileName"></div>
 
   <select name="jenis" required>
@@ -77,26 +90,46 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 </div>
 
 <script>
-const foto = document.getElementById("foto");
+const fotoCamera = document.getElementById("fotoCamera");
+const fotoMedia = document.getElementById("fotoMedia");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
 
-foto.addEventListener("change", () => {
-  if(foto.files.length > 0){
-    const names = Array.from(foto.files).map(f => f.name).join(", ");
-    fileName.textContent = "File: " + names;
+let selectedFiles = [];
+
+function updateFileName() {
+  if(selectedFiles.length > 0){
+    fileName.textContent = "File: " + selectedFiles.map(f=>f.name).join(", ");
   } else { fileName.textContent = ""; }
+}
+
+// Kamera HP
+fotoCamera.addEventListener("change", () => {
+  if(fotoCamera.files.length > 0){
+    selectedFiles = Array.from(fotoCamera.files);
+    updateFileName();
+  }
+});
+
+// Media/Galeri
+fotoMedia.addEventListener("change", () => {
+  if(fotoMedia.files.length > 0){
+    selectedFiles = Array.from(fotoMedia.files);
+    updateFileName();
+  }
 });
 
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
 
-  const formData = new FormData();
-  for (let i = 0; i < foto.files.length; i++) {
-    formData.append("foto", foto.files[i]);
+  if(selectedFiles.length === 0){
+    alert("Pilih atau ambil minimal 1 foto");
+    return;
   }
 
+  const formData = new FormData();
+  selectedFiles.forEach(f => formData.append("foto", f));
   formData.append("jenis", document.querySelector("select[name=jenis]").value);
   formData.append("jumlah", document.querySelector("input[name=jumlah]").value);
 
@@ -124,7 +157,7 @@ function printPage(){ window.print(); }
 
 document.getElementById("exportWordBtn").addEventListener("click", () => {
   if(window.wordFile){
-    window.location.href = window.wordFile; // langsung download file Word
+    window.location.href = window.wordFile;
   } else { alert("Belum ada file Word, proses AI dulu"); }
 });
 </script>
