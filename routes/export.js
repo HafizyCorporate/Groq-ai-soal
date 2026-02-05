@@ -8,8 +8,7 @@ const {
   TextRun,
   AlignmentType,
   HeadingLevel,
-  ImageRun,
-  SectionType
+  ImageRun
 } = require("docx");
 const db = require("../db");
 
@@ -32,9 +31,7 @@ router.get("/:historyId", async (req, res) => {
         creator: "AI Soal App",
         title: "Soal & Jawaban",
         sections: [{
-          properties: {
-            page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
-          },
+          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
           children: []
         }]
       });
@@ -76,12 +73,23 @@ router.get("/:historyId", async (req, res) => {
         // Pilihan Ganda
         if (pgLines.length) {
           paragraphs.push(new Paragraph({ text: "Pilihan Ganda:", bold: true }));
-          pgLines.forEach(line => paragraphs.push(
-            new Paragraph({
-              children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-              spacing: { after: 500 }
-            })
-          ));
+          let currentSoal = null;
+          pgLines.forEach(line => {
+            if (/^\d+\./.test(line)) {
+              // Baris soal → beri spacing 400 (renggang ke soal berikutnya)
+              currentSoal = new Paragraph({
+                children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
+                spacing: { after: 400 }
+              });
+              paragraphs.push(currentSoal);
+            } else {
+              // Baris pilihan A/B/C/D → rapat ke soal
+              paragraphs.push(new Paragraph({
+                children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
+                spacing: { after: 0 }
+              }));
+            }
+          });
         }
 
         // Essay
@@ -90,7 +98,7 @@ router.get("/:historyId", async (req, res) => {
           essayLines.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-              spacing: { after: 500 }
+              spacing: { after: 400 } // renggang antar essay soal
             })
           ));
         }
@@ -118,7 +126,7 @@ router.get("/:historyId", async (req, res) => {
           pgJawaban.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 500 }
+              spacing: { after: 400 } // renggang antar jawaban
             })
           ));
         }
@@ -129,7 +137,7 @@ router.get("/:historyId", async (req, res) => {
           essayJawaban.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 500 }
+              spacing: { after: 400 }
             })
           ));
         }
