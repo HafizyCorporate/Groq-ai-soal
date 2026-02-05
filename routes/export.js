@@ -59,37 +59,43 @@ router.get("/:historyId", async (req, res) => {
       if (row.soal) {
         paragraphs.push(new Paragraph({ text: "===SOAL===", heading: HeadingLevel.HEADING_2 }));
 
-        const soalLines = Array.from(new Set(row.soal.split("\n"))); // hapus duplikasi
+        // hapus duplikasi soal
+        const uniqueSoal = Array.from(new Set(row.soal.split("\n").map(l => l.trim()).filter(l => l)));
+
         const pgLines = [];
         const essayLines = [];
 
-        soalLines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-          if (/^\d+\)/.test(trimmed)) essayLines.push(trimmed);
-          else pgLines.push(trimmed);
+        uniqueSoal.forEach(line => {
+          if (/^\d+\)/.test(line)) essayLines.push(line);
+          else pgLines.push(line);
         });
 
         // Pilihan Ganda
         if (pgLines.length) {
           paragraphs.push(new Paragraph({ text: "Pilihan Ganda:", bold: true }));
-          let currentSoal = null;
+
+          let tempSoal = [];
           pgLines.forEach(line => {
             if (/^\d+\./.test(line)) {
-              // Baris soal → beri spacing 400 (renggang ke soal berikutnya)
-              currentSoal = new Paragraph({
+              // jika sudah ada soal sebelumnya, beri spacing setelah D
+              if (tempSoal.length) {
+                paragraphs.push(...tempSoal);
+                paragraphs.push(new Paragraph({ text: "", spacing: { after: 400 } })); // spasi antar soal
+                tempSoal = [];
+              }
+              tempSoal.push(new Paragraph({
                 children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-                spacing: { after: 400 }
-              });
-              paragraphs.push(currentSoal);
+                spacing: { after: 0 } // rapat ke pilihan
+              }));
             } else {
-              // Baris pilihan A/B/C/D → rapat ke soal
-              paragraphs.push(new Paragraph({
+              // pilihan A/B/C/D → rapat ke soal
+              tempSoal.push(new Paragraph({
                 children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
                 spacing: { after: 0 }
               }));
             }
           });
+          if (tempSoal.length) paragraphs.push(...tempSoal); // soal terakhir
         }
 
         // Essay
@@ -98,7 +104,7 @@ router.get("/:historyId", async (req, res) => {
           essayLines.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-              spacing: { after: 400 } // renggang antar essay soal
+              spacing: { after: 400 } // spasi antar essay soal
             })
           ));
         }
@@ -109,15 +115,13 @@ router.get("/:historyId", async (req, res) => {
         paragraphs.push(new Paragraph({ text: "" }));
         paragraphs.push(new Paragraph({ text: "===JAWABAN===", heading: HeadingLevel.HEADING_2 }));
 
-        const jawabanLines = row.jawaban.split("\n");
+        const uniqueJawaban = Array.from(new Set(row.jawaban.split("\n").map(l => l.trim()).filter(l => l)));
         const pgJawaban = [];
         const essayJawaban = [];
 
-        jawabanLines.forEach(line => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-          if (/^\d+\)/.test(trimmed)) essayJawaban.push(trimmed);
-          else pgJawaban.push(trimmed);
+        uniqueJawaban.forEach(line => {
+          if (/^\d+\)/.test(line)) essayJawaban.push(line);
+          else pgJawaban.push(line);
         });
 
         // Jawaban PG
@@ -126,7 +130,7 @@ router.get("/:historyId", async (req, res) => {
           pgJawaban.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 400 } // renggang antar jawaban
+              spacing: { after: 400 } // spasi antar jawaban PG
             })
           ));
         }
@@ -137,7 +141,7 @@ router.get("/:historyId", async (req, res) => {
           essayJawaban.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 400 }
+              spacing: { after: 400 } // spasi antar jawaban essay
             })
           ));
         }
