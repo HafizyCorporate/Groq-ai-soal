@@ -129,12 +129,25 @@ document.getElementById("exportWordBtn").addEventListener("click", async () => {
     alert("Proses AI dulu sebelum export Word");
     return;
   }
-  const res = await fetch("/export/" + currentHistoryId);
-  const data = await res.json();
-  if(data.wordFile){
-    window.location.href = "/uploads/" + data.wordFile;
-  } else {
-    alert("Gagal generate Word");
+
+  try {
+    const res = await fetch("/export/" + currentHistoryId);
+    const data = await res.json();
+
+    if(data.wordFile){
+      // Buka file Word langsung
+      const link = document.createElement("a");
+      link.href = data.wordFile;
+      link.download = data.wordFile.split("/").pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert("Gagal generate Word");
+    }
+  } catch(err){
+    console.error("Export Word error:", err);
+    alert("Terjadi kesalahan saat export Word");
   }
 });
   
