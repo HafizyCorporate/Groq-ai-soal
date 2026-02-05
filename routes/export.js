@@ -6,39 +6,47 @@ const db = require("../db");
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, "../uploads");
+
+// Pastikan folder uploads ada
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 router.get("/:historyId", async (req, res) => {
   try {
-    const id = parseInt(req.params.historyId);
-    if(!id) return res.status(400).send("History ID tidak valid");
+    const historyId = parseInt(req.params.historyId);
+    if (!historyId) return res.status(400).send("History ID tidak valid");
 
-    db.get("SELECT * FROM history WHERE id = ?", [id], async (err, row) => {
-      if(err) return res.status(500).send("DB error");
-      if(!row) return res.status(404).send("Data tidak ditemukan");
+    db.get("SELECT * FROM history WHERE id = ?", [historyId], async (err, row) => {
+      if (err) return res.status(500).send("DB error");
+      if (!row) return res.status(404).send("Data tidak ditemukan");
+
+      // Pastikan soal & jawaban ada
+      const soalText = row.soal || "Soal tidak tersedia";
+      const jawabanText = row.jawaban || "Jawaban tidak tersedia";
 
       const doc = new Document();
 
       // Halaman pertama = soal
-      const soalParagraphs = row.soal.split("\n").map(line => new Paragraph({ text: line }));
+      const soalParagraphs = soalText.split("\n").map(line => new Paragraph({ text: line }));
       doc.addSection({ children: soalParagraphs });
 
-      // Halaman berikutnya = jawaban
+      // Halaman terakhir = jawaban
       const jawabanParagraphs = [new Paragraph({ children: [new PageBreak()] })].concat(
-        row.jawaban.split("\n").map(line => new Paragraph({ text: line }))
+        jawabanText.split("\n").map(line => new Paragraph({ text: line }))
       );
       doc.addSection({ children: jawabanParagraphs });
 
       const fileName = `export-${Date.now()}.docx`;
       const filePath = path.join(uploadDir, fileName);
 
+      // Generate Word buffer
       const buffer = await Packer.toBuffer(doc);
       fs.writeFileSync(filePath, buffer);
 
+      // Kirim nama file agar frontend bisa download
       res.json({ wordFile: fileName });
     });
 
-  } catch(err){
+  } catch (err) {
     console.error("Word export error:", err);
     res.status(500).send("Gagal generate Word");
   }
