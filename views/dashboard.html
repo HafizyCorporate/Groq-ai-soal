@@ -6,11 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/style.css">
   <style>
-    /* ===== RESET SEDERHANA ===== */
     * { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
     body { background: #f5f5f5; color:#333; }
 
-    /* ===== CONTAINER ===== */
     .container {
       max-width: 800px;
       margin: 20px auto;
@@ -55,10 +53,26 @@
 
     hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 
-    .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-    .actions button { flex:1; }
+    /* ===== TOMBOL PRINT & WORD LEBIH BESAR ===== */
+    .actions {
+      display:flex;
+      gap:10px;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .actions button {
+      flex:1;
+      font-size:1.2rem;    /* lebih besar */
+      padding:15px 20px;   /* lebih besar */
+      border-radius:8px;   /* lebih bulat */
+      background:#007bff;
+      color:#fff;
+      border:none;
+      cursor:pointer;
+      transition: background 0.2s;
+    }
+    .actions button:hover { background:#0056b3; }
 
-    /* ===== RESPONSIVE ===== */
     @media (max-width:600px) {
       h1 { font-size:1.5rem; }
       .actions { flex-direction: column; }
