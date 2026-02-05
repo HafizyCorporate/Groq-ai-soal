@@ -12,7 +12,9 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir)
 // MIDDLEWARE
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use(express.static("public"))
+
+// STATIC FILES
+app.use(express.static(path.join(__dirname, "public")))
 
 app.use(session({
   secret: "secret-ai",
@@ -26,11 +28,19 @@ app.use("/ai", require("./routes/ai"))
 app.use("/export", require("./routes/export"))
 
 // PAGES
-app.get("/", (req, res) => res.sendFile(__dirname + "/views/login.html"))
-app.get("/register", (req, res) => res.sendFile(__dirname + "/views/register.html"))
-app.get("/dashboard", (req, res) => {
-  if (!req.session.user) return res.redirect("/")
-  res.sendFile(__dirname + "/views/dashboard.html")
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "login.html"))
 })
 
-app.listen(3000, () => console.log("SERVER RUNNING"))
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "register.html"))
+})
+
+app.get("/dashboard", (req, res) => {
+  if (!req.session.user) return res.redirect("/")
+  res.sendFile(path.join(__dirname, "views", "dashboard.html"))
+})
+
+// IMPORTANT FOR RAILWAY
+const PORT = process.env.PORT || 8080
+app.listen(PORT, () => console.log("SERVER RUNNING ON", PORT))
