@@ -5,8 +5,6 @@ const { Document, Packer, Paragraph, PageBreak } = require("docx");
 const db = require("../db");
 
 const router = express.Router();
-
-// Folder uploads
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -25,7 +23,7 @@ router.get("/:historyId", async (req,res) => {
       const soalParagraphs = (row.soal||"").split("\n").map(l => new Paragraph({ text:l }));
       doc.addSection({ children: soalParagraphs });
 
-      // Halaman terakhir = Jawaban (PG + Essay)
+      // Halaman terakhir = Jawaban
       const jawabanParagraphs = [new Paragraph({ children:[new PageBreak()] })]
         .concat((row.jawaban||"").split("\n").map(l => new Paragraph({ text:l })));
       doc.addSection({ children: jawabanParagraphs });
@@ -33,10 +31,12 @@ router.get("/:historyId", async (req,res) => {
       const fileName = `export-${Date.now()}.docx`;
       const filePath = path.join(uploadDir, fileName);
 
+      // Tulis file Word
       const buffer = await Packer.toBuffer(doc);
       fs.writeFileSync(filePath, buffer);
 
-      res.json({ wordFile: fileName });
+      // Kirim URL langsung ke frontend
+      res.json({ wordFile: `/uploads/${fileName}` });
     });
 
   } catch(err){
