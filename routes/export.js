@@ -58,11 +58,11 @@ router.get("/:historyId", async (req, res) => {
         new Paragraph({ text: "" })
       );
 
-      // ---- Pisahkan soal PG & Essay ----
+      // ---- Soal ----
       if (row.soal) {
         paragraphs.push(new Paragraph({ text: "===SOAL===", heading: HeadingLevel.HEADING_2 }));
 
-        const soalLines = Array.from(new Set(row.soal.split("\n"))); // hapus duplikat soal
+        const soalLines = Array.from(new Set(row.soal.split("\n"))); // hapus duplikasi
         const pgLines = [];
         const essayLines = [];
 
@@ -73,18 +73,18 @@ router.get("/:historyId", async (req, res) => {
           else pgLines.push(trimmed);
         });
 
-        // Soal PG
+        // Pilihan Ganda
         if (pgLines.length) {
           paragraphs.push(new Paragraph({ text: "Pilihan Ganda:", bold: true }));
           pgLines.forEach(line => paragraphs.push(
             new Paragraph({
               children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-              spacing: { after: 500 } // spacing renggang antar soal
+              spacing: { after: 500 }
             })
           ));
         }
 
-        // Soal Essay
+        // Essay
         if (essayLines.length) {
           paragraphs.push(new Paragraph({ text: "Essay:", bold: true }));
           essayLines.forEach(line => paragraphs.push(
@@ -96,8 +96,8 @@ router.get("/:historyId", async (req, res) => {
         }
       }
 
-      // ---- Jawaban (PG → Essay) ----
-      if (row.jawaban && essayLines.length > 0) { // Hanya tampilkan jawaban kalau ada Essay
+      // ---- Jawaban ----
+      if (row.jawaban) {
         paragraphs.push(new Paragraph({ text: "" }));
         paragraphs.push(new Paragraph({ text: "===JAWABAN===", heading: HeadingLevel.HEADING_2 }));
 
