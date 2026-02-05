@@ -1,54 +1,37 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("form")
-  const loading = document.getElementById("loading")
-  const btn = document.getElementById("btnProses")
-  const soal = document.getElementById("soal")
-  const jawaban = document.getElementById("jawaban")
+  const form = document.getElementById("aiForm")
+  const spinner = document.getElementById("spinner")
 
-  if (!form) return
+  const reviewSoal = document.getElementById("reviewSoal")
+  const reviewJawaban = document.getElementById("reviewJawaban")
 
-  form.addEventListener("submit", async e => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault()
 
-    loading.classList.remove("hidden")
-    btn.disabled = true
-    btn.innerText = "⏳ Memproses..."
+    spinner.style.display = "block"
+    reviewSoal.value = ""
+    reviewJawaban.value = ""
+
+    const formData = new FormData(form)
 
     try {
       const res = await fetch("/ai/process", {
         method: "POST",
-        body: new FormData(form)
+        body: formData
       })
 
       const data = await res.json()
-      const split = data.hasil.split("===JAWABAN===")
 
-      soal.value = split[0].replace("===SOAL===", "").trim()
-      jawaban.value = split[1] ? split[1].trim() : ""
+      if (data.success) {
+        reviewSoal.value = data.soal
+        reviewJawaban.value = data.jawaban
+      } else {
+        alert("Gagal memproses AI")
+      }
     } catch (err) {
-      alert("Gagal memproses AI")
+      alert("Terjadi kesalahan")
+    } finally {
+      spinner.style.display = "none"
     }
-
-    loading.classList.add("hidden")
-    btn.disabled = false
-    btn.innerText = "🚀 Proses ke AI"
   })
-
-  window.exportWord = function () {
-    fetch("/export/word", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        soal: soal.value,
-        jawaban: jawaban.value
-      })
-    })
-      .then(res => res.blob())
-      .then(blob => {
-        const a = document.createElement("a")
-        a.href = URL.createObjectURL(blob)
-        a.download = "hasil-ai.docx"
-        a.click()
-      })
-  }
 })
