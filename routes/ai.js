@@ -13,7 +13,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const upload = multer({ dest: uploadDir });
 
-// Route proses AI
+// Route POST /ai/process
 router.post("/process", upload.single("foto"), async (req, res) => {
   try {
     // Pastikan user login
@@ -34,17 +34,10 @@ Format:
     const ai = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.1-8b-instant", // ✅ model aktif & cepat
-        messages: [
-          { role: "user", content: prompt }
-        ]
+        model: "llama-3.1-8b-instant", // model aktif & cepat
+        messages: [{ role: "user", content: prompt }]
       },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
+      { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
     const hasil = ai.data.choices[0].message.content;
@@ -54,18 +47,14 @@ Format:
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
       [req.session.user.id, hasil, hasil],
       function(err) {
-        if(err){
+        if (err) {
           console.error(err);
+          return res.status(500).json({ error: "Gagal menyimpan history" });
         }
+        // Kirim hasil & historyId ke frontend
+        res.json({ hasil, historyId: this.lastID });
       }
     );
-
-    // Simpan nama file Word sementara
-    const wordFileName = `export-${Date.now()}.docx`;
-    fs.writeFileSync(path.join(uploadDir, wordFileName), ""); // placeholder, nanti export Word generate file nyata
-
-    // Kirim hasil ke frontend
-    res.json({ hasil, wordFile: wordFileName });
 
   } catch (err) {
     console.error("AI ERROR:", err.response?.data || err);
