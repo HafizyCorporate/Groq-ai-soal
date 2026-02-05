@@ -1,7 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { Document, Packer, Paragraph, TextRun } = require("docx");
+const { Document, Packer, Paragraph, TextRun, PageBreak } = require("docx");
 const db = require("../db");
 
 const router = express.Router();
@@ -19,9 +19,11 @@ router.get("/word/:id", async (req, res) => {
       const doc = new Document({
         sections: [{
           children: [
-            ...row.soal.split("\n").map(line => new Paragraph({ children: [new TextRun(line)] })),
-            new Paragraph({ text: "" }),
-            ...row.jawaban.split("\n").map(line => new Paragraph({ children: [new TextRun(line)] }))
+            new Paragraph({ text: "SOAL", bold:true }),
+            ...row.soal.split("\n").map(line => new Paragraph({ children:[ new TextRun(line) ] })),
+            new Paragraph({ text:"", pageBreakBefore:true }),
+            new Paragraph({ text: "JAWABAN", bold:true }),
+            ...row.jawaban.split("\n").map(line => new Paragraph({ children:[ new TextRun(line) ] }))
           ]
         }]
       });
