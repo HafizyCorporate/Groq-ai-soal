@@ -7,7 +7,7 @@
 <style>
 * { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
 body { background: #f5f5f5; color:#333; }
-.container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 10px; shadow: 0 0 10px rgba(0,0,0,0.1); }
+.container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
 h1 { text-align:center; margin-bottom:20px; font-size:1.8rem; }
 form { display:flex; flex-direction:column; gap:15px; }
 .input-group { display: flex; gap: 10px; }
@@ -23,14 +23,14 @@ input[type="number"], select, textarea { width: 100%; padding: 10px; border-radi
 <div class="container">
   <h1>Otomatis Jawab Soal via Foto</h1>
 
-  <form id="aiForm">
+  <form id="aiForm" enctype="multipart/form-data">
     <div class="input-group">
       <label class="btn">
         📷 Ambil Foto
         <input type="file" name="foto" id="foto" accept="image/*" capture="camera" hidden>
       </label>
       <label class="btn">
-        🖼️ Pilih Media
+        🖼️ Pilih Media (Maks 10)
         <input type="file" name="foto" id="media" accept="image/*" multiple hidden>
       </label>
     </div>
@@ -49,9 +49,9 @@ input[type="number"], select, textarea { width: 100%; padding: 10px; border-radi
 
   <hr style="margin:20px 0;">
   <h3>Soal</h3>
-  <textarea id="soal" rows="8" readonly placeholder="Hasil soal akan muncul di sini..."></textarea>
+  <textarea id="soal" rows="8" readonly placeholder="Hasil soal..."></textarea>
   <h3>Jawaban</h3>
-  <textarea id="jawaban" rows="8" readonly placeholder="Hasil jawaban akan muncul di sini..."></textarea>
+  <textarea id="jawaban" rows="8" readonly placeholder="Hasil jawaban..."></textarea>
 
   <div class="actions">
     <button type="button" onclick="window.print()">🖨️ Print</button>
@@ -63,52 +63,39 @@ input[type="number"], select, textarea { width: 100%; padding: 10px; border-radi
 const fotoIn = document.getElementById("foto");
 const mediaIn = document.getElementById("media");
 const fileNameDisp = document.getElementById("fileName");
+let currentHistoryId = null;
 
 const updateLabel = (input) => {
   const count = input.files.length;
-  if(count > 10) {
-    alert("Maksimal 10 gambar!");
-    input.value = "";
-    return;
-  }
-  fileNameDisp.textContent = count > 0 ? `${count} file siap diproses` : "Belum ada file terpilih";
+  if(count > 10) { alert("Maksimal 10 gambar!"); input.value = ""; return; }
+  fileNameDisp.textContent = count > 0 ? `${count} file terpilih` : "Belum ada file terpilih";
 };
 
 fotoIn.addEventListener("change", () => { mediaIn.value = ""; updateLabel(fotoIn); });
-mediaIn.addEventListener("change", () => { fotoIn.value = ""; updateLabel(mediaIn); });
-
-let currentHistoryId = null;
+mediaIn.addEventListener("change", () => { fotoIn.addEventListener = ""; updateLabel(mediaIn); });
 
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(e.target);
-  
-  document.getElementById("soal").value = "Sedang merangkum gambar & menyusun soal... ⏳";
+  document.getElementById("soal").value = "Sedang merangkum & membuat soal... ⏳";
   document.getElementById("jawaban").value = "";
 
   try {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
-
     if(data.success){
       document.getElementById("soal").value = data.soal;
       document.getElementById("jawaban").value = data.jawaban;
       currentHistoryId = data.historyId;
-    } else {
-      alert("Gagal: " + (data.error || "Terjadi kesalahan AI"));
-    }
-  } catch(err){
-    alert("Error koneksi ke server");
-  }
+    } else { alert("Gagal memproses AI"); }
+  } catch(err){ alert("Error koneksi"); }
 });
 
 document.getElementById("exportWordBtn").addEventListener("click", async () => {
   if(!currentHistoryId) return alert("Proses AI dulu!");
   const res = await fetch("/export/" + currentHistoryId);
   const data = await res.json();
-  if(data.wordFile){
-    window.location.href = data.wordFile;
-  }
+  if(data.wordFile) window.location.href = data.wordFile;
 });
 </script>
 </body>
