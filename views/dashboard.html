@@ -87,6 +87,7 @@ const foto = document.getElementById("foto");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
+let lastHistoryId = null;
 
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
@@ -110,7 +111,7 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
     if(data.soal || data.jawaban){
       soalArea.value = data.soal || "";
       jawabanArea.value = data.jawaban || "";
-      window.wordFile = data.wordFile || null;
+      lastHistoryId = data.historyId;
     } else {
       soalArea.value="";
       jawabanArea.value="";
@@ -129,11 +130,23 @@ function printPage(){
   window.print();
 }
 
-document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.wordFile){
-    window.location.href = "/uploads/" + window.wordFile;
-  } else { 
-    alert("Belum ada file Word, proses AI dulu"); 
+document.getElementById("exportWordBtn").addEventListener("click", async () => {
+  if(!lastHistoryId){
+    alert("Belum ada file Word, proses AI dulu");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/export/${lastHistoryId}`);
+    const data = await res.json();
+    if(data.wordFile){
+      window.location.href = "/uploads/" + data.wordFile;
+    } else {
+      alert("Gagal generate Word");
+    }
+  } catch(err){
+    console.error(err);
+    alert("Gagal generate Word");
   }
 });
 </script>
