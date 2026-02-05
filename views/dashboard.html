@@ -3,63 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard</title>
+<title>Dashboard AI Soal</title>
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <header>
-<h1>Dashboard AI Soal</h1>
-<nav>
-<a href="/dashboard">Home</a>
-<a href="/logout">Logout</a>
-</nav>
+  <h1>Bantuan AI isi soal dan jawaban</h1>
+  <nav>
+    <a href="/dashboard">Home</a>
+    <a href="/logout">Logout</a>
+  </nav>
 </header>
 
 <main>
-<section id="uploadSection">
-<h2>Ambil Foto / Pilih dari Media</h2>
-<button id="cameraBtn">Ambil Foto</button>
-<button id="mediaBtn">Ambil dari Media</button>
-<input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
-<div id="preview" style="margin-top:10px;"></div>
-</section>
+  <!-- Upload Section -->
+  <section id="uploadSection">
+    <h2>Ambil Foto / Pilih dari Media</h2>
+    <button id="cameraBtn">Ambil Foto</button>
+    <button id="mediaBtn">Ambil dari Media</button>
+    <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
+    <div id="preview" class="preview"></div>
+  </section>
 
-<section id="generateSection" style="margin-top:20px;">
-<button id="generateBtn">Generate Soal & Export Word</button>
-</section>
+  <!-- Pilihan Jenis Soal -->
+  <section id="typeSection">
+    <h2>Pilih Jenis Soal</h2>
+    <label><input type="radio" name="jenisSoal" value="pg" checked> Pilihan Ganda</label>
+    <label><input type="radio" name="jenisSoal" value="essay"> Essay</label>
+    <label>Jumlah Soal: <input type="number" id="jumlahSoal" value="5" min="1" max="100"></label>
+  </section>
 
-<section id="status" style="margin-top:20px;color:green;"></section>
+  <!-- Tombol Proses -->
+  <section id="processSection">
+    <button id="generateBtn">Proses AI</button>
+    <span id="loading" style="display:none;">⏳ Memproses...</span>
+  </section>
+
+  <!-- Jendela Soal -->
+  <section id="soalSection">
+    <h2>Soal</h2>
+    <textarea id="soalOutput" rows="10" readonly></textarea>
+  </section>
+
+  <!-- Jendela Jawaban -->
+  <section id="jawabanSection">
+    <h2>Jawaban</h2>
+    <textarea id="jawabanOutput" rows="5" readonly></textarea>
+  </section>
+
+  <!-- Tombol Export / Print -->
+  <section id="exportSection">
+    <button id="exportWordBtn">Cetak ke Word</button>
+    <button id="printBtn">Print</button>
+  </section>
 </main>
 
-<script>
-const cameraBtn = document.getElementById("cameraBtn");
-const mediaBtn = document.getElementById("mediaBtn");
-const fileInput = document.getElementById("fileInput");
-const preview = document.getElementById("preview");
-const status = document.getElementById("status");
-let files = [];
-
-cameraBtn.addEventListener("click", () => { fileInput.setAttribute("capture","environment"); fileInput.click(); });
-mediaBtn.addEventListener("click", () => { fileInput.removeAttribute("capture"); fileInput.click(); });
-
-fileInput.addEventListener("change", e => { files = Array.from(e.target.files); preview.innerHTML = files.map(f=>`<p>${f.name}</p>`).join(""); });
-
-document.getElementById("generateBtn").addEventListener("click", async () => {
-  if(files.length === 0){ alert("Pilih foto dulu!"); return; }
-
-  const formData = new FormData();
-  files.forEach(f => formData.append("photos", f));
-
-  status.innerText = "Proses generate soal, mohon tunggu...";
-  try {
-    const res = await fetch("/ai/generate", { method:"POST", body: formData });
-    const data = await res.json();
-    if(data.filename){
-      status.innerText = "Soal berhasil digenerate! Mendownload Word...";
-      window.location.href = `/export/${data.filename}`;
-    } else { status.innerText = "Gagal generate soal!"; }
-  } catch(err){ console.error(err); status.innerText = "Terjadi kesalahan!"; }
-});
-</script>
+<script src="/js/dashboard.js"></script>
 </body>
 </html>
