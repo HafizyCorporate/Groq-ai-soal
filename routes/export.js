@@ -1,13 +1,14 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { Document, Packer, Paragraph, PageBreak } = require("docx");
+const { Document, Packer, Paragraph } = require("docx");
 const db = require("../db");
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+// Export Word
 router.get("/:historyId", async (req, res) => {
   try {
     const historyId = parseInt(req.params.historyId);
@@ -20,16 +21,27 @@ router.get("/:historyId", async (req, res) => {
       const doc = new Document({
         creator: "AI Soal App",
         title: "Soal & Jawaban",
+        sections: [{ children: [] }] // wajib ada
       });
 
-      // Halaman 1 = Soal
-      const soalParagraphs = (row.soal||"").split("\n").map(l => new Paragraph({ text:l }));
-      doc.addSection({ children: soalParagraphs });
+      // Soal + jawaban di satu halaman
+      const paragraphs = [];
 
-      // Halaman terakhir = Jawaban
-      const jawabanParagraphs = [new Paragraph({ children:[new PageBreak()] })]
-        .concat((row.jawaban||"").split("\n").map(l => new Paragraph({ text:l })));
-      doc.addSection({ children: jawabanParagraphs });
+      if(row.soal){
+        paragraphs.push(new Paragraph({ text: "===SOAL===" }));
+        row.soal.split("\n").forEach(line => {
+          paragraphs.push(new Paragraph({ text: line }));
+        });
+      }
+
+      if(row.jawaban){
+        paragraphs.push(new Paragraph({ text: "===JAWABAN===" }));
+        row.jawaban.split("\n").forEach(line => {
+          paragraphs.push(new Paragraph({ text: line }));
+        });
+      }
+
+      doc.addSection({ children: paragraphs });
 
       const fileName = `export-${Date.now()}.docx`;
       const filePath = path.join(uploadDir, fileName);
