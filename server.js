@@ -16,7 +16,6 @@ app.use(session({
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
-// Simpan user sementara di memory
 const users = {};
 
 // Pages
@@ -31,11 +30,9 @@ app.get("/dashboard", (req, res) => {
 app.post("/register", (req, res) => {
   const { username, password } = req.body;
   if(!username || !password) return res.status(400).send("Username & password wajib diisi");
-
   if(users[username]) return res.status(400).send("Username sudah ada");
-
   users[username] = { username, password };
-  req.session.user = username; // langsung login
+  req.session.user = username;
   res.redirect("/dashboard");
 });
 
