@@ -7,7 +7,6 @@ const db = require("../db");
 
 const router = express.Router();
 
-// Upload folder
 const uploadDir = path.join(__dirname, "../uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -26,7 +25,6 @@ Buat persis ${jumlahSoal} soal ${jenisSoal} dari rangkuman foto.
 - Jangan sertakan jawaban ditengah soal.
 - Jawaban Pilihan Ganda ditulis di halaman terakhir setelah semua soal PG.
 - Jawaban Essay ditulis setelah jawaban PG di halaman terakhir.
-- Jika Essay saja, tulis di atas tanpa PG.
 Format:
 ===SOAL===
 ===JAWABAN===
