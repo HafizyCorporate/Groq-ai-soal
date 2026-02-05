@@ -34,31 +34,73 @@ Format:
     const ai = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.1-8b-instant", // model aktif & cepat
+        model: "llama-3.1-8b-instant",
         messages: [{ role: "user", content: prompt }]
       },
       { headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` } }
     );
 
-    const hasil = ai.data.choices[0].message.content;
+    let rawHasil = ai.data.choices[0].message.content;
+
+    // Pisahkan soal & jawaban dari AI
+    let parts = rawHasil.split("===JAWABAN===");
+    let soalText = parts[0].replace("===SOAL===","").trim();
+    let jawabanText = parts[1]?.trim() || "";
+
+    // FORMAT ulang supaya:
+    // 1. Soal PG dulu, Essay setelah
+    // 2. Semua jawaban di akhir, PG dulu, Essay setelah
+    function formatSoalJawaban(soalText, jawabanText){
+      let pgSoal=[], essaySoal=[], pgJaw=[], essayJaw=[];
+      let lines = soalText.split("\n").map(l => l.trim()).filter(l=>l);
+      let isEssay = false;
+      for(let l of lines){
+        if(l.toLowerCase().includes("essay")) isEssay=true;
+        if(isEssay) essaySoal.push(l);
+        else pgSoal.push(l);
+      }
+      let jawLines = jawabanText.split("\n").map(l=>l.trim()).filter(l=>l);
+      isEssay=false;
+      for(let l of jawLines){
+        if(l.toLowerCase().includes("essay")) isEssay=true;
+        if(isEssay) essayJaw.push(l);
+        else pgJaw.push(l);
+      }
+
+      // Semua soal
+      let finalSoal = pgSoal.concat(essaySoal).join("\n");
+      // Semua jawaban
+      let finalJaw = "";
+      if(pgJaw.length>0) finalJaw += "Pilihan Ganda\n" + pgJaw.join("\n") + "\n";
+      if(essayJaw.length>0) finalJaw += "Essay\n" + essayJaw.join("\n");
+
+      return { finalSoal, finalJaw };
+    }
+
+    let { finalSoal, finalJaw } = formatSoalJawaban(soalText, jawabanText);
 
     // Simpan ke history DB
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
-      [req.session.user.id, hasil, hasil],
-      function(err) {
-        if (err) {
+      [req.session.user.id, finalSoal, finalJaw],
+      function(err){
+        if(err){
           console.error(err);
-          return res.status(500).json({ error: "Gagal menyimpan history" });
+          return res.status(500).json({ error:"Gagal menyimpan history" });
         }
-        // Kirim hasil & historyId ke frontend
-        res.json({ hasil, historyId: this.lastID });
+
+        // Kirim ke frontend terpisah
+        res.json({ 
+          soal: finalSoal,
+          jawaban: finalJaw,
+          historyId: this.lastID
+        });
       }
     );
 
-  } catch (err) {
+  } catch(err){
     console.error("AI ERROR:", err.response?.data || err);
-    res.status(500).json({ error: "Gagal memproses AI" });
+    res.status(500).json({ error:"Gagal memproses AI" });
   }
 });
 
