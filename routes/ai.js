@@ -46,7 +46,6 @@ Format:
           console.error(err);
           return res.status(500).json({ error:"Gagal simpan history" });
         }
-
         res.json({ hasil, historyId: this.lastID });
       }
     );
