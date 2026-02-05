@@ -2,51 +2,30 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Groq AI Soal</title>
+<title>Groq AI Soal Bergambar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="/style.css">
 <style>
-* { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
-body { background: #f5f5f5; color:#333; }
-.container {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-h1 { text-align:center; margin-bottom:20px; font-size:1.8rem; }
-h3 { margin-top:20px; margin-bottom:5px; }
+body { font-family: Arial, sans-serif; background:#f5f5f5; color:#333; }
+.container { max-width: 800px; margin:20px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+h1 { text-align:center; margin-bottom:20px;}
 form { display:flex; flex-direction:column; gap:10px; }
-input[type="number"], select, textarea {
-  width: 100%; padding: 10px; border-radius:5px; border:1px solid #ccc; font-size:1rem;
-}
-textarea { resize: vertical; }
-.btn, .btn-green, .btn-blue { display:inline-block; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; font-size:1rem; text-align:center; }
-.btn { background:#eee; color:#333; }
-.btn:hover { background:#ddd; }
-.btn-green { background:#28a745; color:#fff; }
-.btn-green:hover { background:#218838; }
-.btn-blue { background:#007bff; color:#fff; }
-.btn-blue:hover { background:#0056b3; }
+textarea { width:100%; padding:10px; border-radius:5px; border:1px solid #ccc; resize: vertical; }
 #fileName { font-size:0.9rem; color:#555; margin-bottom:5px; }
-hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
+.btn, .btn-green, .btn-blue { padding:10px 15px; border-radius:5px; border:none; cursor:pointer; }
+.btn-green { background:#28a745; color:#fff; }
+.btn-blue { background:#007bff; color:#fff; }
 .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-.actions button {
-  flex:1; font-size:1.2rem; padding:15px 20px; border-radius:8px;
-  background:#007bff; color:#fff; border:none; cursor:pointer; transition: background 0.2s;
-}
-.actions button:hover { background:#0056b3; }
-@media (max-width:600px) { h1 { font-size:1.5rem; } .actions { flex-direction: column; } }
+.actions button { flex:1; padding:15px; border-radius:8px; background:#007bff; color:#fff; border:none; cursor:pointer; }
+.soal-item { margin-bottom:20px; }
+.soal-item img { max-width:200px; display:block; margin-bottom:10px; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Otomatis jawab soalmu via foto</h1>
+<h1>Otomatis soal bergambar dari buku</h1>
 
 <form id="aiForm" enctype="multipart/form-data">
-
   <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
     <label class="btn btn-green">
       📷 Ambil Foto
@@ -74,8 +53,8 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 
 <hr>
 
-<h3>Soal</h3>
-<textarea id="soal" rows="10" readonly></textarea>
+<h3>Soal Bergambar</h3>
+<div id="soalContainer"></div>
 
 <h3>Jawaban</h3>
 <textarea id="jawaban" rows="10" readonly></textarea>
@@ -90,7 +69,7 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 const fotoCamera = document.getElementById("fotoCamera");
 const fotoMedia = document.getElementById("fotoMedia");
 const fileName = document.getElementById("fileName");
-const soalArea = document.getElementById("soal");
+const soalContainer = document.getElementById("soalContainer");
 const jawabanArea = document.getElementById("jawaban");
 
 let selectedFiles = [];
@@ -117,45 +96,44 @@ fotoMedia.addEventListener("change", () => {
 
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
-
-  if(selectedFiles.length === 0){
-    alert("Pilih atau ambil minimal 1 foto");
-    return;
-  }
+  if(selectedFiles.length === 0){ alert("Pilih minimal 1 foto"); return; }
 
   const formData = new FormData();
   selectedFiles.forEach(f => formData.append("foto", f));
   formData.append("jenis", document.querySelector("select[name=jenis]").value);
   formData.append("jumlah", document.querySelector("input[name=jumlah]").value);
 
-  soalArea.value = "Sedang memproses AI... ⏳";
+  soalContainer.innerHTML = "Sedang memproses AI... ⏳";
   jawabanArea.value = "";
 
   try {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
     if(data.hasil){
-      // hasil sudah bersih tanpa ===SOAL=== atau ===JAWABAN===
-      soalArea.value = data.hasil.split("\nJawaban:")[0]?.trim() || data.hasil.trim();
-      jawabanArea.value = data.hasil.split("\nJawaban:")[1]?.trim() || "";
+      // Hasil AI sudah bersih tanpa ===SOAL===
+      const lines = data.hasil.split("\n");
+      soalContainer.innerHTML = "";
+      lines.forEach((line,i) => {
+        if(line.startsWith("http") && (line.endsWith(".jpg") || line.endsWith(".png"))) {
+          const img = document.createElement("img");
+          img.src = line; 
+          soalContainer.appendChild(img);
+        } else {
+          const p = document.createElement("p");
+          p.textContent = line;
+          soalContainer.appendChild(p);
+        }
+      });
+      jawabanArea.value = data.jawaban || "";
       window.wordFile = data.wordFile || null;
-    } else {
-      soalArea.value=""; jawabanArea.value="";
-      alert("Gagal memproses AI");
-    }
-  } catch(err){ 
-    soalArea.value=""; jawabanArea.value="";
-    alert("Terjadi kesalahan AI"); 
-    console.error(err);
-  }
+    } else { soalContainer.innerHTML=""; jawabanArea.value=""; alert("Gagal memproses AI"); }
+  } catch(err){ console.error(err); alert("Terjadi kesalahan AI"); }
 });
 
 function printPage(){ window.print(); }
-
 document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.wordFile){
-    window.location.href = window.wordFile;
-  } else { alert("Belum ada file Word, proses AI dulu"); }
+  if(window.wordFile){ window.location.href = window.wordFile; }
+  else { alert("Belum ada file Word, proses AI dulu"); }
 });
 </script>
 </body>
