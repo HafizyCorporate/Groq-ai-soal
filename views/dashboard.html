@@ -1,78 +1,66 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Groq AI Soal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="/style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/style.css">
 </head>
-<body>
 
+<body>
 <div class="container">
   <h1>Otomatis jawab soalmu via foto</h1>
 
-  <!-- FORM -->
-  <form id="aiForm">
-    <label class="btn-file">
+  <form id="aiForm" enctype="multipart/form-data">
+    <label class="btn">
       📷 Ambil Foto / Pilih Gambar
-      <input type="file" id="foto" name="foto" accept="image/*" required hidden />
+      <input type="file" name="foto" id="foto" accept="image/*" hidden required>
     </label>
 
-    <!-- PREVIEW -->
-    <img id="preview" style="display:none;max-width:100%;margin-top:10px;border-radius:8px"/>
+    <!-- NAMA FILE SAJA -->
+    <div id="fileName" style="margin:8px 0;color:#555;"></div>
 
     <select name="jenis" required>
       <option value="">Jenis Soal</option>
       <option value="Pilihan Ganda">Pilihan Ganda</option>
       <option value="Essay">Essay</option>
-      <option value="Pilihan Ganda dan Essay">Pilihan Ganda & Essay</option>
+      <option value="Pilihan Ganda dan Essay">PG + Essay</option>
     </select>
 
-    <input type="number" name="jumlah" placeholder="Jumlah Soal" required />
+    <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
 
-    <button type="submit">🚀 Proses ke AI</button>
+    <button type="submit" class="btn-green">🚀 Proses ke AI</button>
   </form>
 
-  <!-- LOADING -->
-  <div id="loading" style="display:none;margin-top:10px">
-    ⏳ Memproses AI...
-  </div>
+  <hr>
 
-  <!-- OUTPUT -->
   <h3>Soal</h3>
   <textarea id="soal" rows="10"></textarea>
 
   <h3>Jawaban</h3>
   <textarea id="jawaban" rows="10"></textarea>
+
+  <!-- TOMBOL CETAK -->
+  <div class="actions">
+    <button onclick="printPage()">🖨️ Print</button>
+    <button onclick="exportWord()">📄 Export Word</button>
+  </div>
 </div>
 
 <script>
-const fotoInput = document.getElementById("foto")
-const preview = document.getElementById("preview")
-const form = document.getElementById("aiForm")
-const loading = document.getElementById("loading")
+const foto = document.getElementById("foto")
+const fileName = document.getElementById("fileName")
 
-// PREVIEW FOTO
-fotoInput.addEventListener("change", () => {
-  const file = fotoInput.files[0]
-  if (!file) return
-
-  const reader = new FileReader()
-  reader.onload = e => {
-    preview.src = e.target.result
-    preview.style.display = "block"
+foto.addEventListener("change", () => {
+  if (foto.files.length > 0) {
+    fileName.textContent = "File: " + foto.files[0].name
   }
-  reader.readAsDataURL(file)
 })
 
-// SUBMIT KE AI
-form.addEventListener("submit", async e => {
+document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault()
 
-  const formData = new FormData(form)
-
-  loading.style.display = "block"
+  const formData = new FormData(e.target)
 
   try {
     const res = await fetch("/ai/process", {
@@ -89,13 +77,33 @@ form.addEventListener("submit", async e => {
 
     document.getElementById("soal").value = data.soal
     document.getElementById("jawaban").value = data.jawaban
+
   } catch (err) {
-    alert("Error koneksi server")
-  } finally {
-    loading.style.display = "none"
+    alert("Server error")
   }
 })
-</script>
 
+function printPage() {
+  window.print()
+}
+
+function exportWord() {
+  fetch("/export/word", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      soal: document.getElementById("soal").value,
+      jawaban: document.getElementById("jawaban").value
+    })
+  })
+  .then(res => res.blob())
+  .then(blob => {
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = "hasil-soal.docx"
+    a.click()
+  })
+}
+</script>
 </body>
 </html>
