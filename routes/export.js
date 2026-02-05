@@ -9,10 +9,8 @@ const {
   AlignmentType,
   HeadingLevel,
   ImageRun,
-  Footer,
-  PageNumber,
-  PageNumberFormat,
-  SectionType
+  SectionType,
+  Footer
 } = require("docx");
 const db = require("../db");
 
@@ -39,21 +37,7 @@ router.get("/:historyId", async (req, res) => {
             page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // 1 inch margin
           },
           headers: {},
-          footers: {
-            default: new Footer({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: "Halaman ", bold: true }),
-                    new PageNumber(),
-                    new TextRun({ text: " dari ", bold: true }),
-                    new PageNumber({ format: PageNumberFormat.DECIMAL })
-                  ],
-                  alignment: AlignmentType.CENTER
-                })
-              ]
-            })
-          },
+          footers: {}, // **hapus PageNumber supaya tidak error**
           children: []
         }]
       });
@@ -81,7 +65,7 @@ router.get("/:historyId", async (req, res) => {
       if(row.soal){
         paragraphs.push(new Paragraph({ text: "===SOAL===", heading: HeadingLevel.HEADING_2 }));
 
-        const soalLines = Array.from(new Set(row.soal.split("\n"))); // hapus duplikat
+        const soalLines = Array.from(new Set(row.soal.split("\n"))); // hapus duplikasi
         const pgLines = [];
         const essayLines = [];
 
