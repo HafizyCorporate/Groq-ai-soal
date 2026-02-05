@@ -1,61 +1,84 @@
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
-const { Document, Packer, Paragraph, TextRun, ImageRun, PageBreak } = require("docx");
+const { Document, Packer, Paragraph, TextRun, PageBreak } = require("docx");
 
 const router = express.Router();
-const uploadDir = path.join(__dirname,"../uploads");
+const uploadDir = path.join(__dirname, "../uploads");
 
-router.get("/:filename", async (req,res)=>{
+router.get("/:filename", async (req, res) => {
   try {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
-    if(!fs.existsSync(filePath)) return res.status(404).send("File tidak ditemukan");
 
-    // Ambil data soal dari file atau DB
-    const data = fs.readFileSync(filePath,"utf-8");
+    if (!fs.existsSync(filePath))
+      return res.status(404).send("File tidak ditemukan");
+
+    const data = fs.readFileSync(filePath, "utf-8");
+
+    // Pisahkan jawaban dan soal
+    const jawabanIndex = data.indexOf("Jawaban:");
+    let soalText = jawabanIndex >= 0 ? data.slice(0, jawabanIndex) : data;
+    let jawabanText = jawabanIndex >= 0 ? data.slice(jawabanIndex).trim() : "";
+
+    // Hilangkan double soal & jawaban
+    const soalLines = Array.from(new Set(
+      soalText.split("\n").map(l => l.trim()).filter(l => l !== "")
+    ));
 
     const doc = new Document();
 
-    // Split berdasarkan soal, asumsi setiap soal mulai dengan nomor
-    const soalRegex = /^\d+\.\s.*$/gm;
-    const soalMatches = data.match(soalRegex) || [];
-
-    soalMatches.forEach((s,i)=>{
-      // Cek apakah ada path gambar di baris sebelum soal
-      const lines = s.split("\n");
-      lines.forEach(line=>{
-        if(line.startsWith("http") && (line.endsWith(".jpg") || line.endsWith(".png"))){
-          const imgPath = path.join(uploadDir,path.basename(line));
-          if(fs.existsSync(imgPath)){
-            const imgBuffer = fs.readFileSync(imgPath);
-            doc.addSection({ children:[ new Paragraph({ children:[ new ImageRun({ data: imgBuffer, transformation:{ width:200, height:150 } }) ] }) ] });
-          }
-        } else {
-          doc.addSection({ children:[ new Paragraph({ children:[ new TextRun(line) ] }) ] });
-        }
+    // Tambah soal ke Word
+    soalLines.forEach(line => {
+      doc.addSection({
+        children: [
+          new Paragraph({
+            children: [new TextRun(line)],
+            spacing: { after: 200 }, // spasi antar soal
+          }),
+        ],
       });
-
-      // Beri spasi antar soal
-      if(i<soalMatches.length-1) doc.addSection({ children:[ new Paragraph({ text:"\n" }) ] });
     });
 
-    // Tambah PageBreak untuk jawaban
-    doc.addSection({ children:[ new PageBreak() ] });
+    // PageBreak sebelum jawaban
+    if (jawabanText) {
+      doc.addSection({ children: [new PageBreak()] });
 
-    // Ambil jawaban dari akhir file
-    const jawabanIndex = data.indexOf("Jawaban:");
-    if(jawabanIndex>=0){
-      const jawabanText = data.slice(jawabanIndex).trim();
-      doc.addSection({ children:[ new Paragraph({ children:[ new TextRun({ text:jawabanText, bold:true }) ] }) ] });
+      const jawabanLines = Array.from(new Set(
+        jawabanText.split("\n").map(l => l.trim()).filter(l => l !== "")
+      ));
+
+      jawabanLines.forEach(jLine => {
+        doc.addSection({
+          children: [new Paragraph({ children: [new TextRun(jLine)], spacing: { after: 200 } })],
+        });
+      });
+    }
+
+    // Referensi gambar di bawah jawaban
+    const refMatches = data.match(/https?:\/\/\S+\.(jpg|png)/g) || [];
+    if (refMatches.length > 0) {
+      const refParas = Array.from(new Set(refMatches)).map(url => {
+        const matchSoal = url.match(/Soal\s*(\d+)/i);
+        const nomor = matchSoal ? matchSoal[1] : "?";
+        return new Paragraph({ children: [new TextRun(`Soal ${nomor} – Referensi Gambar: ${url}`)] });
+      });
+      doc.addSection({ children: refParas });
     }
 
     const buffer = await Packer.toBuffer(doc);
-    res.setHeader("Content-Disposition",`attachment; filename=Soal-${Date.now()}.docx`);
-    res.setHeader("Content-Type","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Soal-${Date.now()}.docx`
+    );
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
     res.send(buffer);
 
-  } catch(err){
+  } catch (err) {
     console.error(err);
     res.status(500).send("Gagal generate Word");
   }
