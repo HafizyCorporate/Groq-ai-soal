@@ -124,13 +124,20 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
 
 function printPage(){ window.print(); }
 
-document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.wordFile){
-    window.location.href = "/uploads/" + window.wordFile;
+document.getElementById("exportWordBtn").addEventListener("click", async () => {
+  if(!currentHistoryId){
+    alert("Proses AI dulu sebelum export Word");
+    return;
+  }
+  const res = await fetch("/export/" + currentHistoryId);
+  const data = await res.json();
+  if(data.wordFile){
+    window.location.href = "/uploads/" + data.wordFile;
   } else {
-    alert("Belum ada file Word, proses AI dulu");
+    alert("Gagal generate Word");
   }
 });
+  
 </script>
 </body>
 </html>
