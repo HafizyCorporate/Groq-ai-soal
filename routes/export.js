@@ -22,7 +22,7 @@ router.get("/:historyId", async (req, res) => {
         title: "Soal & Jawaban",
       });
 
-      // Halaman pertama = Soal
+      // Halaman 1 = Soal
       const soalParagraphs = (row.soal||"").split("\n").map(l => new Paragraph({ text:l }));
       doc.addSection({ children: soalParagraphs });
 
