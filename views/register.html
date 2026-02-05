@@ -1,20 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-
-<div class="container">
-  <h1>Daftar</h1>
-  <form method="POST" action="/register">
-    <input name="email" placeholder="Email" required>
-    <input name="password" type="password" placeholder="Password" required>
-    <button>Daftar</button>
-    <a href="/login">Login</a>
-  </form>
-</div>
-
-</body>
-</html>
+<form action="/auth/register" method="post">
+  <h2>Register</h2>
+  <input name="email" required>
+  <input name="password" type="password" required>
+  <button>Daftar</button>
+</form>
