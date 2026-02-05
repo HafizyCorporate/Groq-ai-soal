@@ -1,36 +1,64 @@
 const express = require("express");
 const session = require("express-session");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
+const PORT = process.env.PORT || 8080;
 
+// 1. Middleware Dasar
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
 
-// Session
+// 2. Pastikan folder uploads ada (agar tidak error saat simpan gambar/Word)
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
+// 3. Konfigurasi Session (Optimasi untuk Railway)
 app.use(session({
-  secret: "secret-ai",
-  resave: false,
-  saveUninitialized: true
+    secret: "secret-key-groq-ai", // Ganti bebas
+    resave: false,
+    saveUninitialized: false, // Membantu mengurangi penggunaan memori
+    cookie: { 
+        maxAge: 24 * 60 * 60 * 1000, // 1 Hari
+        secure: false // Set true jika menggunakan HTTPS
+    }
 }));
 
-// ✅ Tambahkan route auth
-app.use("/auth", require("./routes/auth"));
+// 4. Folder Statis (CSS, JS Frontend, dan Hasil Download)
+app.use(express.static("public"));
+app.use("/uploads", express.static(uploadDir));
 
-// Routes AI dan export
+// 5. Hubungkan Routes
+app.use("/auth", require("./routes/auth"));
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
-// Pages
-app.get("/", (req, res) => res.sendFile(__dirname + "/views/login.html"));
-app.get("/register", (req, res) => res.sendFile(__dirname + "/views/register.html"));
-app.get("/dashboard", (req, res) => {
-  if(!req.session.user) return res.redirect("/");
-  res.sendFile(__dirname + "/views/dashboard.html");
+// 6. Routing Halaman Utama
+// Login
+app.get("/", (req, res) => {
+    if (req.session.user) return res.redirect("/dashboard");
+    res.sendFile(path.join(__dirname, "views/login.html"));
 });
 
-// Serve uploads
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Register
+app.get("/register", (req, res) => {
+    res.sendFile(path.join(__dirname, "views/register.html"));
+});
 
-app.listen(8080, () => console.log("SERVER RUNNING ON 8080"));
+// Dashboard (Proteksi Login)
+app.get("/dashboard", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    res.sendFile(path.join(__dirname, "views/dashboard.html"));
+});
+
+// 7. Jalankan Server
+app.listen(PORT, () => {
+    console.log(`
+🚀 SERVER RUNNING!
+📱 URL: http://localhost:${PORT}
+📁 Upload Dir: ${uploadDir}
+    `);
+});
