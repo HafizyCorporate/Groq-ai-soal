@@ -13,16 +13,20 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
 
-    // Ambil gambar pertama untuk diproses Vision
-    const base64Image = fs.readFileSync(req.files[0].path, { encoding: 'base64' });
+    // Ambil gambar pertama untuk dibaca AI Vision
+    const imagePath = req.files[0].path;
+    const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
 
-    const prompt = `Rangkum materi dari gambar ini dan buatkan ${req.body.jumlah} soal ${req.body.jenis}. 
-    ATURAN: Jangan tulis "===SOAL===" di awal. Pisahkan soal dan jawaban dengan pembatas ===JAWABAN=== saja.`;
+    const prompt = `Tolong rangkum materi dari gambar ini dan buatkan ${req.body.jumlah} soal ${req.body.jenis}. 
+    ATURAN: 
+    - JANGAN tulis "===SOAL===" di bagian atas.
+    - Pisahkan antara soal dan jawaban HANYA dengan kata kunci ===JAWABAN===
+    - Berikan rangkuman singkat di awal sebelum soal.`;
 
     const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.2-11b-vision-preview",
+        model: "llama-3.2-11b-vision-preview", // Model Vision agar bisa baca gambar
         messages: [
           {
             role: "user",
@@ -37,9 +41,11 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     );
 
     const fullText = response.data.choices[0].message.content;
-    const [teksSoal, teksJawaban] = fullText.split("===JAWABAN===").map(t => t?.trim() || "");
+    const parts = fullText.split("===JAWABAN===");
+    const teksSoal = parts[0].trim();
+    const teksJawaban = parts[1] ? parts[1].trim() : "";
 
-    // Simpan terpisah ke DB agar export tidak dobel
+    // Simpan terpisah ke DB
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
       [req.session.user.id, teksSoal, teksJawaban],
@@ -48,7 +54,12 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         res.json({ success: true, soal: teksSoal, jawaban: teksJawaban, historyId: this.lastID });
       }
     );
+
+    // Hapus file setelah diproses agar hemat memori (cegah SIGTERM)
+    req.files.forEach(file => fs.unlinkSync(file.path));
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Gagal memproses AI" });
   }
 });
