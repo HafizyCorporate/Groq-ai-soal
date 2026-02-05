@@ -4,7 +4,7 @@ const path = require("path");
 
 const app = express();
 
-// MIDDLEWARE
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -15,12 +15,12 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// ROUTES
+// Routes
 app.use("/auth", require("./routes/auth"));
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
-// PAGES
+// Pages
 app.get("/", (req, res) => res.sendFile(__dirname + "/views/login.html"));
 app.get("/register", (req, res) => res.sendFile(__dirname + "/views/register.html"));
 app.get("/dashboard", (req, res) => {
@@ -28,7 +28,7 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(__dirname + "/views/dashboard.html");
 });
 
-// Serve uploads folder
+// Serve uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(8080, () => console.log("SERVER RUNNING ON 8080"));
