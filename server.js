@@ -8,12 +8,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
+// Session
 app.use(session({
   secret: "secret-ai",
   resave: false,
   saveUninitialized: true
 }));
 
+// ✅ Tambahkan route auth
+app.use("/auth", require("./routes/auth"));
+
+// Routes AI dan export
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
