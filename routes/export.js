@@ -1,65 +1,34 @@
-const express = require("express")
-const { Document, Packer, Paragraph, TextRun, PageBreak } = require("docx")
-const db = require("../db")
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const { Document, Packer, Paragraph, TextRun } = require("docx");
+const db = require("../db");
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/word/:id", (req, res) => {
-  db.get(
-    "SELECT soal, jawaban FROM history WHERE id = ?",
-    [req.params.id],
-    async (err, row) => {
-      if (!row) return res.sendStatus(404)
+router.get("/word/:historyId", async (req, res) => {
+  const id = req.params.historyId;
+  db.get("SELECT * FROM history WHERE id=?", [id], async (err, row) => {
+    if(err || !row) return res.status(404).send("Data tidak ditemukan");
 
-      const soalParagraphs = row.soal.split("\n").map(line =>
-        new Paragraph({
-          children: [new TextRun(line)],
-          spacing: { after: 200 }
-        })
-      )
+    const doc = new Document();
 
-      const jawabanParagraphs = row.jawaban.split("\n").map(line =>
-        new Paragraph({
-          children: [new TextRun(line)],
-          spacing: { after: 200 }
-        })
-      )
+    // Pisah soal & jawaban
+    const [soalPart, jawabanPart] = row.soal.split("===JAWABAN===");
+    const soalParagraphs = soalPart.split("\n").filter(l=>l.trim()).map(l => new Paragraph({ children:[new TextRun(l)] }));
+    const jawabanParagraphs = jawabanPart.split("\n").filter(l=>l.trim()).map(l => new Paragraph({ children:[new TextRun(l)] }));
 
-      const doc = new Document({
-        sections: [
-          {
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "LEMBAR SOAL", bold: true })
-                ]
-              }),
-              ...soalParagraphs
-            ]
-          },
-          {
-            children: [
-              new Paragraph({ children: [new PageBreak()] }),
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "LEMBAR JAWABAN", bold: true })
-                ]
-              }),
-              ...jawabanParagraphs
-            ]
-          }
-        ]
-      })
+    doc.addSection({ children: soalParagraphs });
+    doc.addSection({ children: [new Paragraph({ text:"", pageBreakBefore:true }), ...jawabanParagraphs] });
 
-      const buffer = await Packer.toBuffer(doc)
+    const buffer = await Packer.toBuffer(doc);
+    const wordPath = path.join(__dirname, "../uploads", `export-${row.id}.docx`);
+    fs.writeFileSync(wordPath, buffer);
 
-      res.setHeader(
-        "Content-Disposition",
-        "attachment; filename=soal-ujian.docx"
-      )
-      res.send(buffer)
-    }
-  )
-})
+    res.download(wordPath, `Soal-${row.id}.docx`, err=>{
+      if(err) console.error(err);
+    });
+  });
+});
 
-module.exports = router
+module.exports = router;
