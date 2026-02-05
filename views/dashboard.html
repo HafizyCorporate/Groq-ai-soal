@@ -156,6 +156,32 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
     alert("Terjadi kesalahan AI");
   }
 });
+
+  document.getElementById("exportWordBtn").addEventListener("click", async () => {
+  if(!currentHistoryId){
+    alert("Proses AI dulu sebelum export Word");
+    return;
+  }
+
+  try {
+    const res = await fetch("/export/" + currentHistoryId);
+    const data = await res.json();
+
+    if(data.wordFile){
+      const link = document.createElement("a");
+      link.href = data.wordFile;
+      link.download = data.wordFile.split("/").pop();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert("Gagal generate Word");
+    }
+  } catch(err){
+    console.error("Export Word error:", err);
+    alert("Terjadi kesalahan saat export Word");
+  }
+});
   
 </script>
 </body>
