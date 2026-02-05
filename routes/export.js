@@ -1,166 +1,62 @@
 const express = require("express");
-const fs = require("fs");
 const path = require("path");
-const {
-  Document,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-  HeadingLevel,
-  ImageRun
-} = require("docx");
-const db = require("../db");
+const fs = require("fs");
+const { Document, Packer, Paragraph, TextRun, ImageRun, PageBreak } = require("docx");
 
 const router = express.Router();
-const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const uploadDir = path.join(__dirname,"../uploads");
 
-const logoPath = path.join(__dirname, "../public/logo.png");
-
-router.get("/:historyId", async (req, res) => {
+router.get("/:filename", async (req,res)=>{
   try {
-    const historyId = parseInt(req.params.historyId);
-    if (!historyId) return res.status(400).send("History ID tidak valid");
+    const filename = req.params.filename;
+    const filePath = path.join(uploadDir, filename);
+    if(!fs.existsSync(filePath)) return res.status(404).send("File tidak ditemukan");
 
-    db.get("SELECT * FROM history WHERE id = ?", [historyId], async (err, row) => {
-      if (err) return res.status(500).send("DB error");
-      if (!row) return res.status(404).send("Data tidak ditemukan");
+    // Ambil data soal dari file atau DB
+    const data = fs.readFileSync(filePath,"utf-8");
 
-      const doc = new Document({
-        creator: "AI Soal App",
-        title: "Soal & Jawaban",
-        sections: [{
-          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
-          children: []
-        }]
+    const doc = new Document();
+
+    // Split berdasarkan soal, asumsi setiap soal mulai dengan nomor
+    const soalRegex = /^\d+\.\s.*$/gm;
+    const soalMatches = data.match(soalRegex) || [];
+
+    soalMatches.forEach((s,i)=>{
+      // Cek apakah ada path gambar di baris sebelum soal
+      const lines = s.split("\n");
+      lines.forEach(line=>{
+        if(line.startsWith("http") && (line.endsWith(".jpg") || line.endsWith(".png"))){
+          const imgPath = path.join(uploadDir,path.basename(line));
+          if(fs.existsSync(imgPath)){
+            const imgBuffer = fs.readFileSync(imgPath);
+            doc.addSection({ children:[ new Paragraph({ children:[ new ImageRun({ data: imgBuffer, transformation:{ width:200, height:150 } }) ] }) ] });
+          }
+        } else {
+          doc.addSection({ children:[ new Paragraph({ children:[ new TextRun(line) ] }) ] });
+        }
       });
 
-      const paragraphs = [];
-
-      // ---- Kop surat + logo ----
-      if (fs.existsSync(logoPath)) {
-        const logoImage = fs.readFileSync(logoPath);
-        paragraphs.push(
-          new Paragraph({
-            children: [new ImageRun({ data: logoImage, transformation: { width: 80, height: 80 } })],
-            alignment: AlignmentType.CENTER
-          })
-        );
-      }
-
-      paragraphs.push(
-        new Paragraph({ children: [new TextRun({ text: "SEKOLAH ABC", bold: true, size: 28 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ children: [new TextRun({ text: "Jl. Pendidikan No.123, Kota Contoh", italics: true, size: 20 })], alignment: AlignmentType.CENTER }),
-        new Paragraph({ text: "" })
-      );
-
-      // ---- Soal ----
-      if (row.soal) {
-        paragraphs.push(new Paragraph({ text: "===SOAL===", heading: HeadingLevel.HEADING_2 }));
-
-        // hapus duplikasi soal
-        const uniqueSoal = Array.from(new Set(row.soal.split("\n").map(l => l.trim()).filter(l => l)));
-
-        const pgLines = [];
-        const essayLines = [];
-
-        uniqueSoal.forEach(line => {
-          if (/^\d+\)/.test(line)) essayLines.push(line);
-          else pgLines.push(line);
-        });
-
-        // Pilihan Ganda
-        if (pgLines.length) {
-          paragraphs.push(new Paragraph({ text: "Pilihan Ganda:", bold: true }));
-
-          let tempSoal = [];
-          pgLines.forEach(line => {
-            if (/^\d+\./.test(line)) {
-              // jika sudah ada soal sebelumnya, beri spacing setelah D
-              if (tempSoal.length) {
-                paragraphs.push(...tempSoal);
-                paragraphs.push(new Paragraph({ text: "", spacing: { after: 400 } })); // spasi antar soal
-                tempSoal = [];
-              }
-              tempSoal.push(new Paragraph({
-                children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-                spacing: { after: 0 } // rapat ke pilihan
-              }));
-            } else {
-              // pilihan A/B/C/D → rapat ke soal
-              tempSoal.push(new Paragraph({
-                children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-                spacing: { after: 0 }
-              }));
-            }
-          });
-          if (tempSoal.length) paragraphs.push(...tempSoal); // soal terakhir
-        }
-
-        // Essay
-        if (essayLines.length) {
-          paragraphs.push(new Paragraph({ text: "Essay:", bold: true }));
-          essayLines.forEach(line => paragraphs.push(
-            new Paragraph({
-              children: [new TextRun({ text: line, font: "Times New Roman", size: 24 })],
-              spacing: { after: 400 } // spasi antar essay soal
-            })
-          ));
-        }
-      }
-
-      // ---- Jawaban ----
-      if (row.jawaban) {
-        paragraphs.push(new Paragraph({ text: "" }));
-        paragraphs.push(new Paragraph({ text: "===JAWABAN===", heading: HeadingLevel.HEADING_2 }));
-
-        const uniqueJawaban = Array.from(new Set(row.jawaban.split("\n").map(l => l.trim()).filter(l => l)));
-        const pgJawaban = [];
-        const essayJawaban = [];
-
-        uniqueJawaban.forEach(line => {
-          if (/^\d+\)/.test(line)) essayJawaban.push(line);
-          else pgJawaban.push(line);
-        });
-
-        // Jawaban PG
-        if (pgJawaban.length) {
-          paragraphs.push(new Paragraph({ text: "Pilihan Ganda:", bold: true }));
-          pgJawaban.forEach(line => paragraphs.push(
-            new Paragraph({
-              children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 400 } // spasi antar jawaban PG
-            })
-          ));
-        }
-
-        // Jawaban Essay
-        if (essayJawaban.length) {
-          paragraphs.push(new Paragraph({ text: "Essay:", bold: true }));
-          essayJawaban.forEach(line => paragraphs.push(
-            new Paragraph({
-              children: [new TextRun({ text: line, font: "Times New Roman", size: 22 })],
-              spacing: { after: 400 } // spasi antar jawaban essay
-            })
-          ));
-        }
-      }
-
-      // ---- Add semua paragraf ke section tunggal ----
-      doc.addSection({ children: paragraphs });
-
-      const fileName = `export-${Date.now()}.docx`;
-      const filePath = path.join(uploadDir, fileName);
-
-      const buffer = await Packer.toBuffer(doc);
-      fs.writeFileSync(filePath, buffer);
-
-      res.json({ wordFile: `/uploads/${fileName}` });
+      // Beri spasi antar soal
+      if(i<soalMatches.length-1) doc.addSection({ children:[ new Paragraph({ text:"\n" }) ] });
     });
 
-  } catch (err) {
-    console.error("Word export error:", err);
+    // Tambah PageBreak untuk jawaban
+    doc.addSection({ children:[ new PageBreak() ] });
+
+    // Ambil jawaban dari akhir file
+    const jawabanIndex = data.indexOf("Jawaban:");
+    if(jawabanIndex>=0){
+      const jawabanText = data.slice(jawabanIndex).trim();
+      doc.addSection({ children:[ new Paragraph({ children:[ new TextRun({ text:jawabanText, bold:true }) ] }) ] });
+    }
+
+    const buffer = await Packer.toBuffer(doc);
+    res.setHeader("Content-Disposition",`attachment; filename=Soal-${Date.now()}.docx`);
+    res.setHeader("Content-Type","application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.send(buffer);
+
+  } catch(err){
+    console.error(err);
     res.status(500).send("Gagal generate Word");
   }
 });
