@@ -32,7 +32,6 @@ textarea { resize: vertical; }
 .btn-blue:hover { background:#0056b3; }
 #fileName { font-size:0.9rem; color:#555; margin-bottom:5px; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
-/* Tombol print/export lebih besar */
 .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
 .actions button {
   flex:1; font-size:1.2rem; padding:15px 20px; border-radius:8px;
@@ -49,13 +48,11 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 <form id="aiForm" enctype="multipart/form-data">
 
   <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <!-- Tombol ambil dari kamera HP -->
     <label class="btn btn-green">
       📷 Ambil Foto
       <input type="file" id="fotoCamera" accept="image/*" capture="environment" style="display:none" multiple>
     </label>
 
-    <!-- Tombol ambil dari media/galeri -->
     <label class="btn btn-blue">
       🖼️ Pilih dari Media
       <input type="file" id="fotoMedia" accept="image/*" style="display:none" multiple>
@@ -104,7 +101,6 @@ function updateFileName() {
   } else { fileName.textContent = ""; }
 }
 
-// Kamera HP
 fotoCamera.addEventListener("change", () => {
   if(fotoCamera.files.length > 0){
     selectedFiles = Array.from(fotoCamera.files);
@@ -112,7 +108,6 @@ fotoCamera.addEventListener("change", () => {
   }
 });
 
-// Media/Galeri
 fotoMedia.addEventListener("change", () => {
   if(fotoMedia.files.length > 0){
     selectedFiles = Array.from(fotoMedia.files);
@@ -140,14 +135,16 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
     if(data.hasil){
-      const parts = data.hasil.split("===JAWABAN===");
-      soalArea.value = parts[0].replace("===SOAL===","").trim();
-      jawabanArea.value = parts[1]?.trim() || "";
+      // hasil sudah bersih tanpa ===SOAL=== atau ===JAWABAN===
+      soalArea.value = data.hasil.split("\nJawaban:")[0]?.trim() || data.hasil.trim();
+      jawabanArea.value = data.hasil.split("\nJawaban:")[1]?.trim() || "";
       window.wordFile = data.wordFile || null;
-    } else { soalArea.value=""; jawabanArea.value=""; alert("Gagal memproses AI"); }
+    } else {
+      soalArea.value=""; jawabanArea.value="";
+      alert("Gagal memproses AI");
+    }
   } catch(err){ 
-    soalArea.value=""; 
-    jawabanArea.value=""; 
+    soalArea.value=""; jawabanArea.value="";
     alert("Terjadi kesalahan AI"); 
     console.error(err);
   }
