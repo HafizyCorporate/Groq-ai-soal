@@ -28,7 +28,7 @@ textarea { resize: vertical; }
 .btn:hover { background:#ddd; }
 .btn-green { background:#28a745; color:#fff; }
 .btn-green:hover { background:#218838; }
-#fileName { font-size:0.9rem; color:#555; margin-top:5px; }
+#fileName { font-size:0.9rem; color:#555; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 /* Tombol print/export lebih besar */
 .actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
@@ -47,7 +47,7 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 <form id="aiForm" enctype="multipart/form-data">
   <label class="btn">
     📷 Ambil Foto / Pilih Gambar
-    <input type="file" name="foto" id="foto" accept="image/*" hidden required>
+    <input type="file" name="foto" id="foto" accept="image/*" capture="environment" multiple required>
   </label>
   <div id="fileName"></div>
 
@@ -59,7 +59,6 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
   </select>
 
   <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
-
   <button type="submit" class="btn-green">🚀 Proses ke AI</button>
 </form>
 
@@ -82,21 +81,24 @@ const foto = document.getElementById("foto");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
-let currentHistoryId = null;
 
-// Tampilkan nama file
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
-    fileName.textContent = "File: " + foto.files[0].name;
-  } else {
-    fileName.textContent = "";
-  }
+    const names = Array.from(foto.files).map(f => f.name).join(", ");
+    fileName.textContent = "File: " + names;
+  } else { fileName.textContent = ""; }
 });
 
-// Submit form ke AI
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const formData = new FormData(e.target);
+
+  const formData = new FormData();
+  for (let i = 0; i < foto.files.length; i++) {
+    formData.append("foto", foto.files[i]);
+  }
+
+  formData.append("jenis", document.querySelector("select[name=jenis]").value);
+  formData.append("jumlah", document.querySelector("input[name=jumlah]").value);
 
   soalArea.value = "Sedang memproses AI... ⏳";
   jawabanArea.value = "";
@@ -104,53 +106,26 @@ document.getElementById("aiForm").addEventListener("submit", async e => {
   try {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
-
     if(data.hasil){
       const parts = data.hasil.split("===JAWABAN===");
-      soalArea.value = (parts[0]||"").replace("===SOAL===","").trim();
-      jawabanArea.value = (parts[1]||"").trim();
-      currentHistoryId = data.historyId;
-    } else {
-      soalArea.value = "";
-      jawabanArea.value = "";
-      alert("Gagal memproses AI");
-    }
-  } catch(err){
-    soalArea.value = "";
-    jawabanArea.value = "";
-    alert("Terjadi kesalahan AI");
+      soalArea.value = parts[0].replace("===SOAL===","").trim();
+      jawabanArea.value = parts[1]?.trim() || "";
+      window.wordFile = data.wordFile || null;
+    } else { soalArea.value=""; jawabanArea.value=""; alert("Gagal memproses AI"); }
+  } catch(err){ 
+    soalArea.value=""; 
+    jawabanArea.value=""; 
+    alert("Terjadi kesalahan AI"); 
     console.error(err);
   }
 });
 
-// Tombol print
 function printPage(){ window.print(); }
 
-// Tombol export Word
-document.getElementById("exportWordBtn").addEventListener("click", async () => {
-  if(!currentHistoryId){
-    alert("Proses AI dulu sebelum export Word");
-    return;
-  }
-
-  try {
-    const res = await fetch("/export/" + currentHistoryId);
-    const data = await res.json();
-
-    if(data.wordFile){
-      const link = document.createElement("a");
-      link.href = data.wordFile;
-      link.download = data.wordFile.split("/").pop();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      alert("Gagal generate Word");
-    }
-  } catch(err){
-    console.error("Export Word error:", err);
-    alert("Terjadi kesalahan saat export Word");
-  }
+document.getElementById("exportWordBtn").addEventListener("click", () => {
+  if(window.wordFile){
+    window.location.href = window.wordFile; // langsung download file Word
+  } else { alert("Belum ada file Word, proses AI dulu"); }
 });
 </script>
 </body>
