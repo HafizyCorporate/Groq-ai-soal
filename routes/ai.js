@@ -1,24 +1,16 @@
 const express = require("express")
-const multer = require("multer")
 const axios = require("axios")
-const Tesseract = require("tesseract.js")
-const auth = require("../middleware/auth")
-const { buatWord } = require("../utils/word")
+const multer = require("multer")
+const db = require("../db")
 
 const router = express.Router()
 const upload = multer({ dest: "uploads/" })
 
-router.post("/process", auth, upload.single("foto"), async (req, res) => {
-  const ocr = await Tesseract.recognize(req.file.path, "ind")
-  const text = ocr.data.text
-
+router.post("/process", upload.single("foto"), async (req, res) => {
   const prompt = `
-Ringkas dan buat ${req.body.jumlah} soal ${req.body.tipe}
-Pisahkan:
+Buat ${req.body.jumlah} soal ${req.body.jenis}
 ===SOAL===
 ===JAWABAN===
-
-${text}
 `
 
   const ai = await axios.post(
@@ -28,17 +20,20 @@ ${text}
       messages: [{ role: "user", content: prompt }]
     },
     {
-      headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` }
+      headers: {
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
+      }
     }
   )
 
-  res.json({ hasil: ai.data.choices[0].message.content })
-})
+  const hasil = ai.data.choices[0].message.content
 
-router.post("/word", auth, async (req, res) => {
-  const buffer = await buatWord(req.body.soal, req.body.jawaban)
-  res.setHeader("Content-Disposition", "attachment; filename=soal.docx")
-  res.send(buffer)
+  db.run(
+    "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
+    [req.session.user.id, hasil, hasil]
+  )
+
+  res.json({ hasil })
 })
 
 module.exports = router
