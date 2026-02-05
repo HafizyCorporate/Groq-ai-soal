@@ -1,140 +1,94 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Groq AI Soal Bergambar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="/style.css">
-<style>
-body { font-family: Arial, sans-serif; background:#f5f5f5; color:#333; }
-.container { max-width: 800px; margin:20px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1);}
-h1 { text-align:center; margin-bottom:20px;}
-form { display:flex; flex-direction:column; gap:10px; }
-textarea { width:100%; padding:10px; border-radius:5px; border:1px solid #ccc; resize: vertical; }
-#fileName { font-size:0.9rem; color:#555; margin-bottom:5px; }
-.btn, .btn-green, .btn-blue { padding:10px 15px; border-radius:5px; border:none; cursor:pointer; }
-.btn-green { background:#28a745; color:#fff; }
-.btn-blue { background:#007bff; color:#fff; }
-.actions { display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-.actions button { flex:1; padding:15px; border-radius:8px; background:#007bff; color:#fff; border:none; cursor:pointer; }
-.soal-item { margin-bottom:20px; }
-.soal-item img { max-width:200px; display:block; margin-bottom:10px; }
-</style>
+<title>Dashboard</title>
+<link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<div class="container">
-<h1>Otomatis soal bergambar dari buku</h1>
+  <!-- Header / Navbar -->
+  <header>
+    <h1>Dashboard AI Soal</h1>
+    <nav>
+      <a href="/dashboard">Home</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </header>
 
-<form id="aiForm" enctype="multipart/form-data">
-  <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <label class="btn btn-green">
-      📷 Ambil Foto
-      <input type="file" id="fotoCamera" accept="image/*" capture="environment" style="display:none" multiple>
-    </label>
+  <main>
+    <section id="uploadSection">
+      <h2>Ambil Foto / Pilih dari Media</h2>
+      <button id="cameraBtn">Ambil Foto</button>
+      <button id="mediaBtn">Ambil dari Media</button>
+      <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
+      <div id="preview" style="margin-top:10px;"></div>
+    </section>
 
-    <label class="btn btn-blue">
-      🖼️ Pilih dari Media
-      <input type="file" id="fotoMedia" accept="image/*" style="display:none" multiple>
-    </label>
-  </div>
+    <section id="generateSection" style="margin-top:20px;">
+      <button id="generateBtn">Generate Soal & Export Word</button>
+    </section>
 
-  <div id="fileName"></div>
+    <section id="status" style="margin-top:20px;color:green;"></section>
+  </main>
 
-  <select name="jenis" required>
-    <option value="">Jenis Soal</option>
-    <option value="Pilihan Ganda">Pilihan Ganda</option>
-    <option value="Essay">Essay</option>
-    <option value="Pilihan Ganda dan Essay">PG + Essay</option>
-  </select>
+  <script>
+    const cameraBtn = document.getElementById("cameraBtn");
+    const mediaBtn = document.getElementById("mediaBtn");
+    const fileInput = document.getElementById("fileInput");
+    const preview = document.getElementById("preview");
+    const status = document.getElementById("status");
+    let files = [];
 
-  <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
-  <button type="submit" class="btn-green">🚀 Proses ke AI</button>
-</form>
+    // Tombol kamera
+    cameraBtn.addEventListener("click", () => {
+      fileInput.setAttribute("capture", "environment");
+      fileInput.click();
+    });
 
-<hr>
+    // Tombol media / galeri
+    mediaBtn.addEventListener("click", () => {
+      fileInput.removeAttribute("capture");
+      fileInput.click();
+    });
 
-<h3>Soal Bergambar</h3>
-<div id="soalContainer"></div>
+    // Preview foto yang dipilih
+    fileInput.addEventListener("change", (e) => {
+      files = Array.from(e.target.files);
+      preview.innerHTML = files.map(f => `<p>${f.name}</p>`).join("");
+    });
 
-<h3>Jawaban</h3>
-<textarea id="jawaban" rows="10" readonly></textarea>
+    // Generate soal & export Word
+    document.getElementById("generateBtn").addEventListener("click", async () => {
+      if(files.length === 0){
+        alert("Pilih foto dulu!");
+        return;
+      }
 
-<div class="actions">
-  <button type="button" onclick="printPage()">🖨️ Print</button>
-  <button type="button" id="exportWordBtn">📄 Export Word</button>
-</div>
-</div>
+      const formData = new FormData();
+      files.forEach(f => formData.append("photos", f));
 
-<script>
-const fotoCamera = document.getElementById("fotoCamera");
-const fotoMedia = document.getElementById("fotoMedia");
-const fileName = document.getElementById("fileName");
-const soalContainer = document.getElementById("soalContainer");
-const jawabanArea = document.getElementById("jawaban");
+      status.innerText = "Proses generate soal, mohon tunggu...";
 
-let selectedFiles = [];
+      try {
+        const res = await fetch("/ai/generate", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
 
-function updateFileName() {
-  if(selectedFiles.length > 0){
-    fileName.textContent = "File: " + selectedFiles.map(f=>f.name).join(", ");
-  } else { fileName.textContent = ""; }
-}
-
-fotoCamera.addEventListener("change", () => {
-  if(fotoCamera.files.length > 0){
-    selectedFiles = Array.from(fotoCamera.files);
-    updateFileName();
-  }
-});
-
-fotoMedia.addEventListener("change", () => {
-  if(fotoMedia.files.length > 0){
-    selectedFiles = Array.from(fotoMedia.files);
-    updateFileName();
-  }
-});
-
-document.getElementById("aiForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  if(selectedFiles.length === 0){ alert("Pilih minimal 1 foto"); return; }
-
-  const formData = new FormData();
-  selectedFiles.forEach(f => formData.append("foto", f));
-  formData.append("jenis", document.querySelector("select[name=jenis]").value);
-  formData.append("jumlah", document.querySelector("input[name=jumlah]").value);
-
-  soalContainer.innerHTML = "Sedang memproses AI... ⏳";
-  jawabanArea.value = "";
-
-  try {
-    const res = await fetch("/ai/process", { method:"POST", body: formData });
-    const data = await res.json();
-    if(data.hasil){
-      // Hasil AI sudah bersih tanpa ===SOAL===
-      const lines = data.hasil.split("\n");
-      soalContainer.innerHTML = "";
-      lines.forEach((line,i) => {
-        if(line.startsWith("http") && (line.endsWith(".jpg") || line.endsWith(".png"))) {
-          const img = document.createElement("img");
-          img.src = line; 
-          soalContainer.appendChild(img);
+        if(data.filename){
+          status.innerText = "Soal berhasil digenerate! Mendownload Word...";
+          // Download Word
+          window.location.href = `/export/${data.filename}`;
         } else {
-          const p = document.createElement("p");
-          p.textContent = line;
-          soalContainer.appendChild(p);
+          status.innerText = "Gagal generate soal!";
         }
-      });
-      jawabanArea.value = data.jawaban || "";
-      window.wordFile = data.wordFile || null;
-    } else { soalContainer.innerHTML=""; jawabanArea.value=""; alert("Gagal memproses AI"); }
-  } catch(err){ console.error(err); alert("Terjadi kesalahan AI"); }
-});
-
-function printPage(){ window.print(); }
-document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.wordFile){ window.location.href = window.wordFile; }
-  else { alert("Belum ada file Word, proses AI dulu"); }
-});
-</script>
+      } catch(err){
+        console.error(err);
+        status.innerText = "Terjadi kesalahan!";
+      }
+    });
+  </script>
 </body>
 </html>
