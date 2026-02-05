@@ -28,7 +28,7 @@ textarea { resize: vertical; }
 .btn:hover { background:#ddd; }
 .btn-green { background:#28a745; color:#fff; }
 .btn-green:hover { background:#218838; }
-#fileName { font-size:0.9rem; color:#555; margin:5px 0; }
+#fileName { font-size:0.9rem; color:#555; margin:4px 0; }
 hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 
 /* Tombol print/export lebih besar */
@@ -45,7 +45,6 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
 }
 </style>
 </head>
-
 <body>
 <div class="container">
 <h1>Otomatis jawab soalmu via foto</h1>
@@ -64,17 +63,18 @@ hr { margin:20px 0; border:none; border-top:1px solid #ccc; }
     <option value="Pilihan Ganda dan Essay">PG + Essay</option>
   </select>
 
-  <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
+  <input type="number" name="jumlah" placeholder="Jumlah Soal" required min="1">
+
   <button type="submit" class="btn-green">🚀 Proses ke AI</button>
 </form>
 
 <hr>
 
 <h3>Soal</h3>
-<textarea id="soal" rows="10" readonly></textarea>
+<textarea id="soal" rows="12" readonly placeholder="Soal akan muncul di sini..."></textarea>
 
 <h3>Jawaban</h3>
-<textarea id="jawaban" rows="10" readonly></textarea>
+<textarea id="jawaban" rows="12" readonly placeholder="Jawaban akan muncul di sini..."></textarea>
 
 <div class="actions">
   <button type="button" onclick="printPage()">🖨️ Print</button>
@@ -87,21 +87,19 @@ const foto = document.getElementById("foto");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
-const aiForm = document.getElementById("aiForm");
 
-// Tampilkan nama file saja
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
     fileName.textContent = "File: " + foto.files[0].name;
-  } else fileName.textContent = "";
+  } else { 
+    fileName.textContent = ""; 
+  }
 });
 
-// Submit form → proses AI
-aiForm.addEventListener("submit", async e => {
+document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(e.target);
 
-  // Indikator loading
   soalArea.value = "Sedang memproses AI... ⏳";
   jawabanArea.value = "";
 
@@ -109,10 +107,10 @@ aiForm.addEventListener("submit", async e => {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
 
-    if(data.soal && data.jawaban){
-      soalArea.value = data.soal;
-      jawabanArea.value = data.jawaban;
-      window.historyId = data.historyId; // Untuk export Word
+    if(data.soal || data.jawaban){
+      soalArea.value = data.soal || "";
+      jawabanArea.value = data.jawaban || "";
+      window.wordFile = data.wordFile || null;
     } else {
       soalArea.value="";
       jawabanArea.value="";
@@ -120,22 +118,22 @@ aiForm.addEventListener("submit", async e => {
     }
 
   } catch(err){
-    console.error(err);
     soalArea.value="";
     jawabanArea.value="";
     alert("Terjadi kesalahan AI");
+    console.error(err);
   }
 });
 
-// Tombol Print
-function printPage(){ window.print(); }
+function printPage(){
+  window.print();
+}
 
-// Tombol Export Word
 document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.historyId){
-    window.location.href = "/export/word/" + window.historyId;
-  } else {
-    alert("Belum ada file Word, proses AI dulu");
+  if(window.wordFile){
+    window.location.href = "/uploads/" + window.wordFile;
+  } else { 
+    alert("Belum ada file Word, proses AI dulu"); 
   }
 });
 </script>
