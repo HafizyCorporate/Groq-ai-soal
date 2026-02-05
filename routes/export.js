@@ -6,40 +6,49 @@ const db = require("../db");
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-router.get("/word/:id", async (req, res) => {
-  const historyId = req.params.id;
+// Pastikan folder uploads ada
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-  db.get("SELECT soal, jawaban FROM history WHERE id = ?", [historyId], async (err, row) => {
-    if(err){ console.error(err); return res.status(500).send("Gagal ambil history"); }
-    if(!row) return res.status(404).send("History tidak ditemukan");
+// Route generate Word dari history
+router.get("/:historyId", async (req, res) => {
+  try {
+    const id = parseInt(req.params.historyId);
+    if(!id) return res.status(400).send("History ID tidak valid");
 
-    try {
-      const doc = new Document({
-        sections: [{
-          children: [
-            new Paragraph({ text: "SOAL", bold:true }),
-            ...row.soal.split("\n").map(line => new Paragraph({ children:[ new TextRun(line) ] })),
-            new Paragraph({ text:"", pageBreakBefore:true }),
-            new Paragraph({ text: "JAWABAN", bold:true }),
-            ...row.jawaban.split("\n").map(line => new Paragraph({ children:[ new TextRun(line) ] }))
-          ]
-        }]
-      });
+    // Ambil data history
+    db.get("SELECT * FROM history WHERE id = ?", [id], async (err, row) => {
+      if(err) return res.status(500).send("DB error");
+      if(!row) return res.status(404).send("Data tidak ditemukan");
 
-      const buffer = await Packer.toBuffer(doc);
-      const fileName = `export-${historyId}.docx`;
+      const doc = new Document();
+
+      // Halaman pertama = Soal
+      const soalParagraphs = row.soal.split("\n").map(line => new Paragraph({ text: line }));
+      doc.addSection({ children: soalParagraphs });
+
+      // Halaman berikutnya = Jawaban
+      const jawabanParagraphs = [new Paragraph({ children: [new PageBreak()] })].concat(
+        row.jawaban.split("\n").map(line => new Paragraph({ text: line }))
+      );
+      doc.addSection({ children: jawabanParagraphs });
+
+      // Buat nama file
+      const fileName = `export-${Date.now()}.docx`;
       const filePath = path.join(uploadDir, fileName);
+
+      // Generate Word
+      const buffer = await Packer.toBuffer(doc);
       fs.writeFileSync(filePath, buffer);
 
-      res.download(filePath, fileName, err => { if(err) console.error(err); });
+      // Kirim nama file ke frontend agar tombol export bisa pakai
+      res.json({ wordFile: fileName });
+    });
 
-    } catch(e) {
-      console.error("Gagal generate Word:", e);
-      res.status(500).send("Gagal generate Word");
-    }
-  });
+  } catch(err){
+    console.error("Word export error:", err);
+    res.status(500).send("Gagal generate Word");
+  }
 });
 
 module.exports = router;
