@@ -4,7 +4,6 @@ const path = require("path");
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -15,8 +14,6 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// Routes
-app.use("/auth", require("./routes/auth"));
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
