@@ -9,7 +9,7 @@ db.serialize(() => {
     password TEXT
   )`);
 
-  // Tabel History dengan kolom soal & jawaban terpisah
+  // Tabel History (Soal & Jawaban Terpisah)
   db.run(`CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
