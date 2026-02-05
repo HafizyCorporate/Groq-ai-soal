@@ -11,10 +11,8 @@ const router = express.Router()
 const uploadDir = path.join(__dirname, "../uploads")
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir)
 
-// config upload
-const upload = multer({
-  dest: uploadDir
-})
+// multer upload
+const upload = multer({ dest: uploadDir })
 
 router.post("/process", upload.single("foto"), async (req, res) => {
   try {
@@ -29,11 +27,11 @@ router.post("/process", upload.single("foto"), async (req, res) => {
     const { jenis, jumlah } = req.body
 
     const prompt = `
-Dari teks soal pada foto, buatkan ${jumlah} soal ${jenis}
+Buat ${jumlah} soal ${jenis}
 
 FORMAT WAJIB:
 ===SOAL===
-1. ...
+1. Pertanyaan
 A. ...
 B. ...
 C. ...
@@ -42,12 +40,12 @@ D. ...
 ===JAWABAN===
 1. A
 2. B
-    `
+`
 
     const ai = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }]
       },
       {
@@ -58,11 +56,13 @@ D. ...
       }
     )
 
-    const hasil = ai.data.choices[0].message.content
+    const content = ai.data.choices[0].message.content
 
-    // pisahkan soal & jawaban
-    const soal = hasil.split("===JAWABAN===")[0].replace("===SOAL===", "").trim()
-    const jawaban = hasil.split("===JAWABAN===")[1]?.trim() || ""
+    const soal = content.split("===JAWABAN===")[0]
+      .replace("===SOAL===", "")
+      .trim()
+
+    const jawaban = content.split("===JAWABAN===")[1]?.trim() || ""
 
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
@@ -72,7 +72,7 @@ D. ...
     res.json({
       soal,
       jawaban,
-      filename: req.file.filename
+      file: req.file.filename
     })
 
   } catch (err) {
