@@ -81,6 +81,7 @@ const foto = document.getElementById("foto");
 const fileName = document.getElementById("fileName");
 const soalArea = document.getElementById("soal");
 const jawabanArea = document.getElementById("jawaban");
+let historyId = null; // simpan ID history terakhir dari backend
 
 foto.addEventListener("change", () => {
   if(foto.files.length > 0){
@@ -91,27 +92,52 @@ foto.addEventListener("change", () => {
 document.getElementById("aiForm").addEventListener("submit", async e => {
   e.preventDefault();
   const formData = new FormData(e.target);
+
   soalArea.value = "Sedang memproses AI... ⏳";
   jawabanArea.value = "";
+
+  const btn = e.target.querySelector(".btn-green");
+  btn.disabled = true;
+  btn.textContent = "⏳ Memproses...";
+
   try {
     const res = await fetch("/ai/process", { method:"POST", body: formData });
     const data = await res.json();
+
     if(data.hasil){
       const parts = data.hasil.split("===JAWABAN===");
       soalArea.value = parts[0].replace("===SOAL===","").trim();
       jawabanArea.value = parts[1]?.trim() || "";
-      // simpan nama file Word dari backend
-      window.wordFile = data.wordFile || null;
-    } else { soalArea.value=""; jawabanArea.value=""; alert("Gagal memproses AI"); }
-  } catch(err){ soalArea.value=""; jawabanArea.value=""; alert("Terjadi kesalahan AI"); console.error(err);}
+
+      // simpan historyId untuk export Word
+      historyId = data.historyId || null;
+    } else {
+      soalArea.value = "";
+      jawabanArea.value = "";
+      alert("Gagal memproses AI");
+    }
+  } catch(err){
+    soalArea.value = "";
+    jawabanArea.value = "";
+    alert("Terjadi kesalahan AI");
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🚀 Proses ke AI";
+  }
 });
 
+// Tombol print
 function printPage(){ window.print(); }
 
+// Tombol export Word
 document.getElementById("exportWordBtn").addEventListener("click", () => {
-  if(window.wordFile){
-    window.location.href = "/uploads/" + window.wordFile;
-  } else { alert("Belum ada file Word, proses AI dulu"); }
+  if(historyId){
+    // arahkan ke route backend export Word
+    window.location.href = `/export/word/${historyId}`;
+  } else {
+    alert("Belum ada file Word, proses AI dulu");
+  }
 });
 </script>
 </body>
