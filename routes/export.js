@@ -5,8 +5,11 @@ const { Document, Packer, Paragraph, TextRun } = require("docx");
 const db = require("../db");
 
 const router = express.Router();
+const uploadDir = path.join(__dirname, "../uploads");
 
-// Export Word berdasarkan historyId
+// Pastikan folder uploads ada
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+
 router.get("/word/:id", async (req, res) => {
   const historyId = req.params.id;
 
@@ -19,41 +22,42 @@ router.get("/word/:id", async (req, res) => {
       return res.status(404).send("History tidak ditemukan");
     }
 
-    // Bagi soal & jawaban
-    const [soalText, jawabanText] = [row.soal, row.jawaban];
+    try {
+      const doc = new Document();
 
-    // Bikin dokumen Word
-    const doc = new Document();
+      // Soal
+      const soalParagraphs = row.soal.split("\n").map(line =>
+        new Paragraph({ children:[ new TextRun(line) ] })
+      );
+      doc.addSection({ children: soalParagraphs });
 
-    // Tambahkan semua soal
-    const soalParagraphs = soalText.split("\n").map(line => 
-      new Paragraph({ children:[ new TextRun(line) ] })
-    );
-    doc.addSection({ children: soalParagraphs });
+      // Spacer sebelum jawaban
+      doc.addSection({ children: [new Paragraph("")] });
 
-    // Tambahkan jarak sebelum jawaban
-    doc.addSection({ children: [new Paragraph("")] });
+      // Jawaban
+      const jawabanParagraphs = row.jawaban.split("\n").map(line =>
+        new Paragraph({ children:[ new TextRun(line) ] })
+      );
+      doc.addSection({ children: jawabanParagraphs });
 
-    // Tambahkan jawaban
-    const jawabanParagraphs = jawabanText.split("\n").map(line =>
-      new Paragraph({ children:[ new TextRun(line) ] })
-    );
-    doc.addSection({ children: jawabanParagraphs });
+      const buffer = await Packer.toBuffer(doc);
 
-    const packer = new Packer();
-    const buffer = await packer.toBuffer(doc);
+      const fileName = `export-${historyId}.docx`;
+      const filePath = path.join(uploadDir, fileName);
 
-    // Nama file Word
-    const fileName = `export-${historyId}.docx`;
-    const filePath = path.join(__dirname, "../uploads/", fileName);
+      fs.writeFileSync(filePath, buffer);
 
-    fs.writeFileSync(filePath, buffer);
+      // Kirim file ke user
+      res.download(filePath, fileName, err=>{
+        if(err) console.error(err);
+        // Optional: hapus file setelah download
+        // fs.unlinkSync(filePath);
+      });
 
-    res.download(filePath, fileName, err => {
-      if(err) console.error(err);
-      // Opsi: hapus file sementara setelah download
-      // fs.unlinkSync(filePath);
-    });
+    } catch(e){
+      console.error("Gagal generate Word:", e);
+      res.status(500).send("Gagal generate Word");
+    }
   });
 });
 
