@@ -1,66 +1,59 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const { Document, Packer, Paragraph, TextRun, PageBreak } = require("docx");
+const { Document, Packer, Paragraph, TextRun } = require("docx");
 const db = require("../db");
 
 const router = express.Router();
 
-const uploadDir = path.join(__dirname, "../uploads/");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+// Export Word berdasarkan historyId
+router.get("/word/:id", async (req, res) => {
+  const historyId = req.params.id;
 
-// Route export Word berdasarkan history id
-router.get("/word/:historyId", async (req, res) => {
-  const id = req.params.historyId;
-
-  db.get("SELECT * FROM history WHERE id=?", [id], async (err, row) => {
-    if (err || !row) return res.status(404).send("Data tidak ditemukan");
-
-    try {
-      const doc = new Document();
-
-      // Pisah soal & jawaban
-      const [soalPart, jawabanPart] = row.soal.split("===JAWABAN===");
-
-      // Buat paragraf soal
-      const soalParagraphs = soalPart
-        .split("\n")
-        .filter(l => l.trim())
-        .map(l => new Paragraph({ children: [new TextRun(l)] }));
-
-      // Buat paragraf jawaban
-      const jawabanParagraphs = jawabanPart
-        .split("\n")
-        .filter(l => l.trim())
-        .map(l => new Paragraph({ children: [new TextRun(l)] }));
-
-      // Tambahkan section soal
-      doc.addSection({ children: soalParagraphs });
-
-      // Tambahkan section jawaban di halaman baru
-      doc.addSection({
-        properties: { page: { breakBefore: true } },
-        children: [new Paragraph({ text: "Jawaban", spacing: { after: 200 } }), ...jawabanParagraphs]
-      });
-
-      // Generate buffer Word
-      const buffer = await Packer.toBuffer(doc);
-
-      // Nama file
-      const wordFileName = `Soal-${row.id}.docx`;
-      const wordPath = path.join(uploadDir, wordFileName);
-
-      // Simpan file di uploads
-      fs.writeFileSync(wordPath, buffer);
-
-      // Kirim ke browser
-      res.download(wordPath, wordFileName, err => {
-        if (err) console.error(err);
-      });
-    } catch (e) {
-      console.error("Export Word ERROR:", e);
-      res.status(500).send("Gagal export Word");
+  db.get("SELECT soal, jawaban FROM history WHERE id = ?", [historyId], async (err, row) => {
+    if(err){
+      console.error(err);
+      return res.status(500).send("Gagal mengambil history");
     }
+    if(!row){
+      return res.status(404).send("History tidak ditemukan");
+    }
+
+    // Bagi soal & jawaban
+    const [soalText, jawabanText] = [row.soal, row.jawaban];
+
+    // Bikin dokumen Word
+    const doc = new Document();
+
+    // Tambahkan semua soal
+    const soalParagraphs = soalText.split("\n").map(line => 
+      new Paragraph({ children:[ new TextRun(line) ] })
+    );
+    doc.addSection({ children: soalParagraphs });
+
+    // Tambahkan jarak sebelum jawaban
+    doc.addSection({ children: [new Paragraph("")] });
+
+    // Tambahkan jawaban
+    const jawabanParagraphs = jawabanText.split("\n").map(line =>
+      new Paragraph({ children:[ new TextRun(line) ] })
+    );
+    doc.addSection({ children: jawabanParagraphs });
+
+    const packer = new Packer();
+    const buffer = await packer.toBuffer(doc);
+
+    // Nama file Word
+    const fileName = `export-${historyId}.docx`;
+    const filePath = path.join(__dirname, "../uploads/", fileName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    res.download(filePath, fileName, err => {
+      if(err) console.error(err);
+      // Opsi: hapus file sementara setelah download
+      // fs.unlinkSync(filePath);
+    });
   });
 });
 
