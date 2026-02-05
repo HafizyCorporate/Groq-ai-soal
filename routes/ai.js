@@ -2,36 +2,33 @@ const express = require("express");
 const axios = require("axios");
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 const db = require("../db");
-
 const router = express.Router();
 
-// Setup multer untuk uploads
-const uploadDir = path.join(__dirname, "../uploads/");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+const upload = multer({ dest: path.join(__dirname, "../uploads/") });
 
-const upload = multer({ dest: uploadDir });
-
-// Route proses AI
-router.post("/process", upload.single("foto"), async (req, res) => {
+router.post("/process", upload.array("foto", 10), async (req, res) => {
   try {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
-    if (!req.file) return res.status(400).json({ error: "Foto wajib diupload" });
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib diupload" });
 
-    const jumlahSoal = req.body.jumlah;
-    const jenisSoal = req.body.jenis;
+    const { jumlah, jenis } = req.body;
 
+    // Prompt diperketat agar tidak ada kata "===SOAL===" di awal
     const prompt = `
-Buat persis ${jumlahSoal} soal ${jenisSoal} dari rangkuman foto.
-- Jawaban pilihan ganda ditulis di akhir halaman
-- Jawaban essay ditulis setelah jawaban PG di halaman akhir
-Format:
-===SOAL===
+Tolong rangkum materi dari gambar yang saya kirim dan buatkan ${jumlah} soal ${jenis}.
+Gunakan format pemisah yang ketat seperti di bawah ini:
+
+[Isi Soal Disini]
+
 ===JAWABAN===
+
+[Isi Jawaban Disini]
+
+Catatan: Jangan tambahkan teks apa pun sebelum soal atau setelah jawaban.
 `;
 
-    const ai = await axios.post(
+    const response = await axios.post(
       "https://api.groq.com/openai/v1/chat/completions",
       {
         model: "llama-3.1-8b-instant",
@@ -45,26 +42,28 @@ Format:
       }
     );
 
-    const hasil = ai.data.choices[0].message.content;
+    const fullText = response.data.choices[0].message.content;
+    const parts = fullText.split("===JAWABAN===");
+    
+    const soalFix = parts[0].trim();
+    const jawabanFix = parts[1] ? parts[1].trim() : "";
 
-    // Simpan ke history DB
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
-      [req.session.user.id, hasil, hasil],
+      [req.session.user.id, soalFix, jawabanFix],
       function(err) {
-        if(err){
-          console.error(err);
-        }
-        // Kirim hasil ke frontend beserta historyId
+        if(err) return res.status(500).json({ error: "DB Error" });
         res.json({ 
-          hasil, 
+          success: true,
+          soal: soalFix, 
+          jawaban: jawabanFix,
           historyId: this.lastID 
         });
       }
     );
 
   } catch (err) {
-    console.error("AI ERROR:", err.response?.data || err);
+    console.error(err);
     res.status(500).json({ error: "Gagal memproses AI" });
   }
 });
