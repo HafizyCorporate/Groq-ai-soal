@@ -19,6 +19,7 @@
             <h1 class="text-xl font-bold text-gray-800 tracking-tight">AutoSoal <span class="text-blue-600">AI</span></h1>
         </div>
         <div class="flex items-center gap-4">
+            <span class="hidden md:inline text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Akun Premium</span>
             <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">
                 <i class="fas fa-sign-out-alt mr-1"></i> Logout
             </a>
@@ -97,7 +98,6 @@
             const formData = new FormData();
             const fileInput = document.getElementById('foto');
             
-            // Validasi client-side maksimal 5 gambar
             if (fileInput.files.length > 5) {
                 alert("Maksimal 5 gambar saja ya!");
                 return;
@@ -116,15 +116,22 @@
             btnProses.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> Memproses...';
 
             try {
+                // Endpoint tetap menggunakan /ai/process sesuai routes/ai.js
                 const response = await fetch('/ai/process', { method: 'POST', body: formData });
                 const data = await response.json();
+                
                 if (data.success) {
                     currentHistoryId = data.historyId;
                     document.getElementById('soalContent').textContent = data.soal;
                     document.getElementById('jawabanContent').textContent = data.jawaban;
                     resultArea.classList.remove('hidden');
-                } else { alert('Gagal: ' + data.error); }
-            } catch (err) { alert('Koneksi bermasalah.'); }
+                } else { 
+                    // Perbaikan: Menampilkan pesan error dari server (seperti limit 1x)
+                    alert(data.error || 'Terjadi kesalahan pada AI'); 
+                }
+            } catch (err) { 
+                alert('Koneksi bermasalah atau server mati.'); 
+            }
             finally {
                 loading.classList.add('hidden');
                 btnProses.disabled = false;
@@ -140,8 +147,9 @@
         function copyAll() {
             const soal = document.getElementById('soalContent').innerText;
             const jawaban = document.getElementById('jawabanContent').innerText;
+            if(!soal) return alert('Tidak ada teks untuk disalin');
             navigator.clipboard.writeText(soal + "\n\n=== JAWABAN ===\n\n" + jawaban);
-            alert('Berhasil disalin!');
+            alert('Berhasil disalin ke clipboard!');
         }
     </script>
 </body>
