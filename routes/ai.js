@@ -11,15 +11,15 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// Konfigurasi Multer untuk menerima maksimal 10 gambar
+// Konfigurasi Multer untuk menerima maksimal 5 gambar
 const upload = multer({ dest: uploadDir });
 
-router.post("/process", upload.array("foto", 10), async (req, res) => {
+router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
+    if (req.files.length > 5) return res.status(400).json({ error: "Maksimal 5 gambar saja" });
 
-    // Payload awal berisi instruksi teks untuk AI
     const contentPayload = [
       { 
         type: "text", 
@@ -36,12 +36,12 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         2. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
 
         Aturan Jawaban:
-        1. HANYA 1 jawaban benar, lainnya tidak nyambung (distractor).
+        1. HANYA 1 jawaban benar, lainnya tidak nyambung.
         2. Taruh semua kunci setelah pemisah ===JAWABAN===.`
       }
     ];
 
-    // Menambahkan setiap gambar ke dalam payload untuk diproses AI
+    // Masukkan setiap file gambar ke dalam payload
     req.files.forEach(file => {
       const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
       contentPayload.push({
@@ -66,7 +66,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
       [req.session.user.id, teksSoal, teksJawaban],
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
-        // Menghapus file sementara dari folder uploads
+        // Hapus file sementara
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
         res.json({
           success: true,
