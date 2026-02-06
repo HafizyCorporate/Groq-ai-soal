@@ -36,9 +36,8 @@ router.get("/word/:id", (req, res) => {
                             spacing: { after: 200 }
                         }),
 
-                        // --- DAFTAR SOAL (Pembersihan Label) ---
+                        // --- DAFTAR SOAL ---
                         ...soalLines.map(line => {
-                            // Hapus paksa label jika AI masih menuliskannya
                             const cleanLine = line.replace(/Soal PG:|Soal Essay:/gi, "").trim();
                             if (!cleanLine) return new Paragraph({ spacing: { after: 100 } });
 
@@ -50,18 +49,26 @@ router.get("/word/:id", (req, res) => {
                             });
                         }),
 
-                        // --- HALAMAN BARU UNTUK JAWABAN & REFERENSI ---
+                        // --- HALAMAN BARU UNTUK KUNCI & REFERENSI ---
                         new Paragraph({ children: [new PageBreak()] }), 
                         new Paragraph({
                             children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24, underline: {} })],
                             spacing: { after: 200 }
                         }),
                         ...jawabanLines.map(line => {
-                            // Deteksi judul referensi gambar untuk memberi jarak ekstra
-                            const isRef = line.includes("REFERENSI GAMBAR");
+                            const isRefHeader = line.includes("REFERENSI GAMBAR");
+                            const isLink = line.toLowerCase().includes("http") || line.toLowerCase().includes("soal no");
+                            
                             return new Paragraph({
-                                children: [ new TextRun({ text: line, size: 22, bold: isRef }) ],
-                                spacing: { before: isRef ? 400 : 0, after: 80 }
+                                children: [ 
+                                    new TextRun({ 
+                                        text: line, 
+                                        size: 22, 
+                                        bold: isRefHeader,
+                                        color: isLink ? "0000FF" : "000000" 
+                                    }) 
+                                ],
+                                spacing: { before: isRefHeader ? 400 : 0, after: 80 }
                             });
                         }),
                     ],
