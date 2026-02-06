@@ -1,77 +1,83 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-// Kita hanya panggil komponen inti yang pasti ada di semua versi
+// Gunakan komponen dasar yang paling stabil
 const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
 
 router.get("/word/:id", (req, res) => {
     const historyId = req.params.id;
 
     db.get("SELECT * FROM history WHERE id = ?", [historyId], async (err, data) => {
-        if (err || !data) {
-            console.error("Database Error:", err);
-            return res.status(404).send("Data tidak ditemukan.");
-        }
+        if (err || !data) return res.status(404).send("Data tidak ditemukan.");
 
         try {
-            const soalLines = (data.soal || "").split('\n');
-            const jawabanLines = (data.jawaban || "").split('\n');
+            // Bersihkan teks soal dari baris kosong berlebih di awal
+            const soalLines = (data.soal || "").trim().split('\n');
+            const jawabanLines = (data.jawaban || "").trim().split('\n');
 
             const doc = new Document({
                 sections: [{
+                    properties: {
+                        // Memperkecil margin halaman agar muat lebih banyak
+                        page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } }
+                    },
                     children: [
-                        // --- KOP SURAT ---
+                        // --- KOP SURAT (Dibuat lebih rapat) ---
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
                             children: [
-                                new TextRun({ text: "INSTANSI PENDIDIKAN AUTO SOAL AI", bold: true, size: 28 }),
+                                new TextRun({ text: "INSTANSI PENDIDIKAN AUTO SOAL AI", bold: true, size: 24 }),
                             ],
+                            spacing: { after: 0 }
                         }),
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
                             children: [
-                                new TextRun({ text: "UJIAN BERBASIS KECERDASAN BUATAN", bold: true, size: 22 }),
+                                new TextRun({ text: "UJIAN BERBASIS KECERDASAN BUATAN", bold: true, size: 18 }),
                             ],
+                            spacing: { after: 0 }
                         }),
                         new Paragraph({ 
                             alignment: AlignmentType.CENTER, 
-                            text: "__________________________________________________________" 
+                            text: "__________________________________________________________________________",
+                            spacing: { after: 200 } // Jarak garis ke soal dikecilkan
                         }),
-                        new Paragraph({ text: "" }), // Spasi kosong
 
                         // --- ISI SOAL ---
-                        ...soalLines.map(line => new Paragraph({
-                            children: [ new TextRun({ text: line, size: 24 }) ],
-                            spacing: { after: 120 },
-                            keepNext: true, // Mencegah soal terpotong
-                            keepLines: true
-                        })),
+                        ...soalLines.map((line, index) => {
+                            // Jika baris kosong, buat paragraf kecil saja
+                            if (!line.trim()) return new Paragraph({ spacing: { after: 100 } });
 
-                        // --- HALAMAN BARU ---
+                            return new Paragraph({
+                                children: [ new TextRun({ text: line, size: 22 }) ],
+                                spacing: { after: 80 },
+                                // keepNext hanya untuk baris soal, jangan untuk semua agar tidak pindah halaman sekaligus
+                                keepNext: line.includes('?') || line.match(/^\d+\./) ? true : false,
+                                keepLines: true
+                            });
+                        }),
+
+                        // --- HALAMAN BARU UNTUK KUNCI ---
                         new Paragraph({ children: [new PageBreak()] }), 
-
-                        // --- KUNCI JAWABAN ---
                         new Paragraph({
-                            children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 26, underline: {} })],
+                            children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24, underline: {} })],
                             spacing: { after: 200 }
                         }),
                         ...jawabanLines.map(line => new Paragraph({
-                            children: [ new TextRun({ text: line, size: 24 }) ],
-                            spacing: { after: 100 }
+                            children: [ new TextRun({ text: line, size: 22 }) ],
+                            spacing: { after: 80 }
                         })),
                     ],
                 }],
             });
 
             const buffer = await Packer.toBuffer(doc);
-            
             res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
             res.setHeader("Content-Disposition", `attachment; filename=Soal_Ujian_AI.docx`);
             res.send(buffer);
 
         } catch (error) {
-            console.error("DOCX ERROR:", error);
-            res.status(500).send("Gagal membuat file Word: " + error.message);
+            res.status(500).send("Gagal membuat file: " + error.message);
         }
     });
 });
