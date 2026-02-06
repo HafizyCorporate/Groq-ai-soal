@@ -24,25 +24,28 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     const jenisSoal = req.body.jenis; 
     const jumlahSoal = req.body.jumlah;
 
-    // Prompt yang diperbarui untuk jawaban tidak nyambung
-    const prompt = `Tugas: Buat soal berdasarkan gambar.
+    // PROMPT SUPER LENGKAP: Fokus Soal, Link Gambar, & No Rangkuman
+    const prompt = `Tugas: Buat soal berdasarkan gambar yang diunggah.
     
-    Aturan Konten & Jawaban:
-    1. Buat ${jumlahSoal} soal ${jenisSoal}. JANGAN membuat rangkuman.
-    2. Khusus Pilihan Ganda (PG): 
-       - HANYA ada 1 jawaban yang benar berdasarkan konteks gambar.
-       - 3 pilihan jawaban lainnya HARUS dibuat tidak nyambung, aneh, atau di luar konteks soal (contoh: jika soal tentang matematika, pilihan salahnya bisa tentang buah-buahan atau benda mati).
+    Aturan Utama:
+    1. Buat ${jumlahSoal} soal ${jenisSoal}. 
+    2. JANGAN membuat rangkuman materi atau teks pembuka. Langsung ke nomor soal.
     
-    Aturan Format Spasi:
-    1. Jika Pilihan Ganda:
-       - Berikan 1 baris kosong (spasi) antara pertanyaan dan pilihan A.
-       - Berikan 2 baris kosong (spasi) antar nomor soal sebagai jarak.
-    2. Jika Essay:
-       - Berikan 1 baris kosong (spasi) antar nomor soal.
+    Aturan Gambar (PENTING):
+    - Jika soal memungkinkan (hewan, tumbuhan, benda), sertakan emoji yang relevan.
+    - Cari dan cantumkan link gambar yang valid dari Unsplash di bawah soal tersebut.
+    - Format link: [Lihat Gambar: https://source.unsplash.com/featured/?nama-benda]
+    
+    Aturan Pilihan Ganda (PG):
+    - HANYA ada 1 jawaban benar. 3 jawaban lainnya harus tidak nyambung (out of context).
+    - Berikan 1 baris kosong antara soal dan pilihan A.
+    - Berikan 2 baris kosong antar nomor soal agar tidak mepet saat di-export.
+    
+    Aturan Essay:
+    - Berikan 1 baris kosong antar nomor soal.
     
     Kunci Jawaban:
-    1. Kumpulkan SEMUA kunci jawaban di akhir setelah tanda ===JAWABAN===.
-    2. Format jawaban: "Nomor. Huruf/Teks Jawaban".`;
+    - Kumpulkan SEMUA kunci jawaban di bagian paling akhir setelah pemisah ===JAWABAN===.`;
 
     const completion = await groq.chat.completions.create({
       messages: [
@@ -58,7 +61,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         },
       ],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.8, // Menaikkan kreativitas untuk jawaban tidak nyambung
+      temperature: 0.7,
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
@@ -74,7 +77,6 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
         res.json({
           success: true,
-          hasil: fullContent,
           soal: teksSoal,
           jawaban: teksJawaban,
           historyId: this.lastID,
