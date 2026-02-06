@@ -11,7 +11,6 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// Konfigurasi Multer untuk menerima maksimal 5 gambar
 const upload = multer({ dest: uploadDir });
 
 router.post("/process", upload.array("foto", 5), async (req, res) => {
@@ -23,8 +22,12 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis semua gambar yang diberikan (${req.files.length} gambar). Rangkum informasinya dan buat ${req.body.jumlah} soal ${req.body.jenis}.
+        text: `Tugas: Analisis semua gambar yang diberikan (${req.files.length} gambar). Buat ${req.body.jumlah} soal ${req.body.jenis}.
         
+        KOMPOSISI SOAL:
+        - 80% soal berbasis teks (berdasarkan materi).
+        - 20% soal berbasis pengamatan gambar (visual). Contoh: "Hewan apakah yang ada pada gambar?" atau "Benda apa yang ditunjukkan tanda panah?".
+
         Aturan Format Soal:
         1. JANGAN menuliskan "Soal PG:" atau "Soal Essay:" di depan nomor.
         2. Gunakan format penomoran langsung: "1) [Pertanyaan]".
@@ -32,16 +35,17 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         4. Antar nomor soal berikan jarak 2 baris kosong.
         
         Aturan Referensi Gambar:
-        1. Kumpulkan SEMUA link gambar Unsplash yang relevan di bagian paling akhir.
-        2. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
+        1. Cari link gambar Unsplash yang BENAR-BENAR RELEVAN dengan soal visual tersebut (Contoh: Soal monyet harus link gambar monyet).
+        2. Letakkan SEMUA link gambar di bagian paling akhir setelah Kunci Jawaban.
+        3. WAJIB tuliskan nomor soal untuk setiap link. Contoh: "Soal No 1: [Link Unsplash]".
+        4. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
 
         Aturan Jawaban:
-        1. HANYA 1 jawaban benar, lainnya tidak nyambung.
+        1. HANYA 1 jawaban benar.
         2. Taruh semua kunci setelah pemisah ===JAWABAN===.`
       }
     ];
 
-    // Masukkan setiap file gambar ke dalam payload
     req.files.forEach(file => {
       const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
       contentPayload.push({
@@ -66,7 +70,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       [req.session.user.id, teksSoal, teksJawaban],
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
-        // Hapus file sementara
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
         res.json({
           success: true,
