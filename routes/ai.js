@@ -31,12 +31,17 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         );
       });
 
-      if (checkLimit >= 1) {
-        return res.status(403).json({ 
-          error: "Jatah harian Anda habis (Maksimal 1x sehari). Hubungi Admin untuk upgrade ke Premium!" 
-        });
-      }
-    }
+      
+if (checkLimit >= 1) {
+    return res.status(403).json({ 
+        error: `Jatah harian Anda habis (Maksimal 1x sehari). 
+        
+Bilamana ingin menggunakan lebih banyak harap hubungi admin:
+Whatsapp: 082240400388 (https://wa.me/6282240400388)
+Member bulanan hanya Rp 5.000
+    });
+}
+
 
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
     
