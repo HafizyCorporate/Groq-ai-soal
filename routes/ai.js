@@ -21,31 +21,28 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     const imagePath = req.files[0].path;
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
 
-    // Menyesuaikan instruksi berdasarkan jenis soal yang dipilih user
-    const jenisSoal = req.body.jenis; // 'PG' atau 'Essay'
+    const jenisSoal = req.body.jenis; 
     const jumlahSoal = req.body.jumlah;
 
-    const prompt = `Tugas: Buat soal dari gambar yang diberikan.
+    // Prompt yang diperbarui untuk jawaban tidak nyambung
+    const prompt = `Tugas: Buat soal berdasarkan gambar.
     
-    Aturan Format:
-    1. Buat ${jumlahSoal} soal ${jenisSoal}. JANGAN membuat rangkuman materi.
-    2. Jika Pilihan Ganda:
-       - Berikan 1 baris kosong antara pertanyaan dan pilihan A.
-       - Berikan 2 baris kosong antara nomor soal (jarak antar soal).
-       - Format pilihan: A. [teks], B. [teks], dst.
-    3. Jika Essay:
-       - Berikan 1 baris kosong antar nomor soal (jarak antar soal).
-    4. Kunci Jawaban:
-       - JANGAN tulis jawaban di bawah soal langsung.
-       - Tuliskan SEMUA kunci jawaban di bagian paling akhir setelah tanda ===JAWABAN===.
+    Aturan Konten & Jawaban:
+    1. Buat ${jumlahSoal} soal ${jenisSoal}. JANGAN membuat rangkuman.
+    2. Khusus Pilihan Ganda (PG): 
+       - HANYA ada 1 jawaban yang benar berdasarkan konteks gambar.
+       - 3 pilihan jawaban lainnya HARUS dibuat tidak nyambung, aneh, atau di luar konteks soal (contoh: jika soal tentang matematika, pilihan salahnya bisa tentang buah-buahan atau benda mati).
     
-    Contoh Output Akhir:
-    [Seluruh Soal]
+    Aturan Format Spasi:
+    1. Jika Pilihan Ganda:
+       - Berikan 1 baris kosong (spasi) antara pertanyaan dan pilihan A.
+       - Berikan 2 baris kosong (spasi) antar nomor soal sebagai jarak.
+    2. Jika Essay:
+       - Berikan 1 baris kosong (spasi) antar nomor soal.
     
-    ===JAWABAN===
-    Jawaban ${jenisSoal}:
-    1. ...
-    2. ...`;
+    Kunci Jawaban:
+    1. Kumpulkan SEMUA kunci jawaban di akhir setelah tanda ===JAWABAN===.
+    2. Format jawaban: "Nomor. Huruf/Teks Jawaban".`;
 
     const completion = await groq.chat.completions.create({
       messages: [
@@ -61,7 +58,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         },
       ],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.7,
+      temperature: 0.8, // Menaikkan kreativitas untuk jawaban tidak nyambung
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
