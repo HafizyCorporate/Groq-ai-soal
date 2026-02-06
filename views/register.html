@@ -2,41 +2,49 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Daftar Akun - Pembuat Soal AI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar - AI Pembuat Soal</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-blue-50 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md mx-4">
-        <h2 class="text-3xl font-extrabold mb-2 text-center text-blue-600">Daftar Akun</h2>
-        <p class="text-center text-gray-500 mb-8">Buat akun untuk mulai membuat soal otomatis</p>
+<body class="bg-gray-50 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-blue-600 italic">AutoSoal AI</h2>
+            <p class="text-gray-500">Buat akun baru kamu</p>
+        </div>
         
-        <form id="regForm" class="space-y-4">
+        <form id="regForm" class="space-y-5">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="email" placeholder="contoh@email.com" 
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <input type="email" id="email" placeholder="nama@email.com" 
+                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" required>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
                 <input type="password" id="password" placeholder="********" 
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" required>
             </div>
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700 transition duration-300">
+            
+            <button type="submit" id="btnDaftar" class="w-full bg-blue-600 text-white font-bold p-3 rounded-xl hover:bg-blue-700 shadow-lg transform active:scale-95 transition">
                 Daftar Sekarang
             </button>
         </form>
         
-        <div class="mt-6 text-center">
-            <p class="text-gray-600 text-sm">Sudah punya akun? <a href="/" class="text-blue-500 font-semibold hover:underline">Login di sini</a></p>
+        <div class="mt-6 text-center text-sm text-gray-600">
+            Sudah punya akun? <a href="/" class="text-blue-500 font-bold hover:underline">Login</a>
         </div>
     </div>
 
     <script>
         document.getElementById('regForm').onsubmit = async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('btnDaftar');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+
+            // Loading state
+            btn.innerText = 'Memproses...';
+            btn.disabled = true;
 
             try {
                 const response = await fetch('/auth/register', {
@@ -48,14 +56,17 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Pendaftaran Berhasil! Silakan Login menggunakan email dan password Anda.');
-                    // LEMPAR KE HALAMAN LOGIN
+                    // LANGSUNG PINDAH KE LOGIN TANPA ALERT
                     window.location.href = '/'; 
                 } else {
-                    alert('Gagal Daftar: ' + data.error);
+                    alert('Gagal: ' + data.error);
+                    btn.innerText = 'Daftar Sekarang';
+                    btn.disabled = false;
                 }
             } catch (err) {
-                alert('Terjadi kesalahan koneksi ke server.');
+                alert('Koneksi server terputus');
+                btn.innerText = 'Daftar Sekarang';
+                btn.disabled = false;
             }
         };
     </script>
