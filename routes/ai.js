@@ -17,10 +17,10 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
 
-    // --- LOGIKA LIMIT 1X SEHARI (KECUALI ADMIN) ---
     const userId = req.session.user.id;
     const userRole = req.session.user.role; 
 
+    // --- LOGIKA LIMIT 1X SEHARI (KECUALI ADMIN VERSACY) ---
     if (userRole !== 'admin') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
@@ -37,7 +37,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         });
       }
     }
-    // --- AKHIR LOGIKA LIMIT ---
 
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
     
@@ -52,12 +51,8 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         KOMPOSISI: 80% teks, 20% visual (soal gambar).
 
         ATURAN PENULISAN SOAL:
-        1. Gunakan format nomor langsung: "1) [Pertanyaan]". JANGAN pakai label "Soal PG:".
-        2. Berikan jarak 2 baris kosong antar nomor soal agar rapi.
-        3. Link Google Image harus spesifik: https://www.google.com/search?q=[keyword]&tbm=isch (Ganti keyword sesuai subjek soal).
-        
-        STRUKTUR OUTPUT (WAJIB PATUH):
-        [Tulis semua daftar soal di sini sampai nomor terakhir]
+        1. Gunakan format nomor langsung: "1) [Pertanyaan]".
+        2. Link Google Image harus spesifik: https://www.google.com/search?q=[keyword]&tbm=isch
         
         ###BATAS_AKHIR_SOAL###
 
@@ -65,7 +60,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         [Tulis semua kunci jawaban di sini]
 
         --- DOWNLOAD REFERENSI GAMBAR ---
-        [Tulis link Google Image di sini, sertakan nomor soalnya: "Soal No X: [Link]"]`
+        [Tulis link Google Image di sini, sertakan nomor soalnya]`
       }
     ];
 
@@ -80,19 +75,17 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: contentPayload }],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.5, // Suhu rendah agar AI sangat patuh pada format
+      temperature: 0.5,
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
-    
-    // Memisahkan soal dan jawaban berdasarkan pembatas unik
     const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
     const teksSoal = parts[0].trim();
     const teksJawaban = parts[1] ? parts[1].trim() : "Gagal memisahkan jawaban.";
 
     db.run(
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
-      [req.session.user.id, teksSoal, teksJawaban],
+      [userId, teksSoal, teksJawaban],
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
@@ -105,7 +98,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       }
     );
   } catch (err) {
-    console.error("GROQ ERROR:", err);
     res.status(500).json({ error: "Gagal memproses AI." });
   }
 });
