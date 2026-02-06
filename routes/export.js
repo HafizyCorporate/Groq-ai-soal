@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-// Gunakan komponen dasar yang paling stabil
 const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
 
 router.get("/word/:id", (req, res) => {
@@ -11,62 +10,60 @@ router.get("/word/:id", (req, res) => {
         if (err || !data) return res.status(404).send("Data tidak ditemukan.");
 
         try {
-            // Bersihkan teks soal dari baris kosong berlebih di awal
             const soalLines = (data.soal || "").trim().split('\n');
             const jawabanLines = (data.jawaban || "").trim().split('\n');
 
             const doc = new Document({
                 sections: [{
                     properties: {
-                        // Memperkecil margin halaman agar muat lebih banyak
                         page: { margin: { top: 720, bottom: 720, left: 720, right: 720 } }
                     },
                     children: [
-                        // --- KOP SURAT (Dibuat lebih rapat) ---
+                        // --- KOP SURAT ---
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "INSTANSI PENDIDIKAN AUTO SOAL AI", bold: true, size: 24 }),
-                            ],
+                            children: [ new TextRun({ text: "INSTANSI PENDIDIKAN AUTO SOAL AI", bold: true, size: 24 }) ],
                             spacing: { after: 0 }
                         }),
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "UJIAN BERBASIS KECERDASAN BUATAN", bold: true, size: 18 }),
-                            ],
+                            children: [ new TextRun({ text: "UJIAN BERBASIS KECERDASAN BUATAN", bold: true, size: 18 }) ],
                             spacing: { after: 0 }
                         }),
                         new Paragraph({ 
                             alignment: AlignmentType.CENTER, 
                             text: "__________________________________________________________________________",
-                            spacing: { after: 200 } // Jarak garis ke soal dikecilkan
+                            spacing: { after: 200 }
                         }),
 
-                        // --- ISI SOAL ---
-                        ...soalLines.map((line, index) => {
-                            // Jika baris kosong, buat paragraf kecil saja
-                            if (!line.trim()) return new Paragraph({ spacing: { after: 100 } });
+                        // --- DAFTAR SOAL (Pembersihan Label) ---
+                        ...soalLines.map(line => {
+                            // Hapus paksa label jika AI masih menuliskannya
+                            const cleanLine = line.replace(/Soal PG:|Soal Essay:/gi, "").trim();
+                            if (!cleanLine) return new Paragraph({ spacing: { after: 100 } });
 
                             return new Paragraph({
-                                children: [ new TextRun({ text: line, size: 22 }) ],
+                                children: [ new TextRun({ text: cleanLine, size: 22 }) ],
                                 spacing: { after: 80 },
-                                // keepNext hanya untuk baris soal, jangan untuk semua agar tidak pindah halaman sekaligus
-                                keepNext: line.includes('?') || line.match(/^\d+\./) ? true : false,
+                                keepNext: cleanLine.includes(')') || cleanLine.match(/^\d+/) ? true : false,
                                 keepLines: true
                             });
                         }),
 
-                        // --- HALAMAN BARU UNTUK KUNCI ---
+                        // --- HALAMAN BARU UNTUK JAWABAN & REFERENSI ---
                         new Paragraph({ children: [new PageBreak()] }), 
                         new Paragraph({
                             children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24, underline: {} })],
                             spacing: { after: 200 }
                         }),
-                        ...jawabanLines.map(line => new Paragraph({
-                            children: [ new TextRun({ text: line, size: 22 }) ],
-                            spacing: { after: 80 }
-                        })),
+                        ...jawabanLines.map(line => {
+                            // Deteksi judul referensi gambar untuk memberi jarak ekstra
+                            const isRef = line.includes("REFERENSI GAMBAR");
+                            return new Paragraph({
+                                children: [ new TextRun({ text: line, size: 22, bold: isRef }) ],
+                                spacing: { before: isRef ? 400 : 0, after: 80 }
+                            });
+                        }),
                     ],
                 }],
             });
