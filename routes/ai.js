@@ -25,7 +25,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const userRole = req.session.user.role; 
 
     // 2. Logika Limit (Hanya untuk role 'user')
-    // Admin dan Premium bebas limit
     if (userRole === 'user') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
@@ -36,7 +35,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         );
       });
 
-      // Jika sudah 1x, kirim status 403 (Forbidden) untuk memicu Modal di Dashboard
       if (checkLimit >= 1) {
         return res.status(403).json({ 
           error: "Jatah harian habis. Silakan upgrade ke Premium!" 
@@ -52,7 +50,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const jumlahDiminta = req.body.jumlah || 5;
     const jenisSoal = req.body.jenis || "PG";
 
-    // 4. Menyusun Payload untuk Groq AI
+    // 4. Menyusun Payload Multimodal untuk Llama 4 Scout
     const contentPayload = [
       { 
         type: "text", 
@@ -66,7 +64,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       }
     ];
 
-    // Mengonversi Gambar ke Base64 agar bisa dibaca AI
+    // Mengonversi setiap gambar ke Base64 agar Llama 4 bisa "melihat"
     req.files.forEach(file => {
       const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
       contentPayload.push({
@@ -75,11 +73,21 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       });
     });
 
-    // 5. Memanggil API Groq
+    // 5. Memanggil API Groq dengan Model Llama 4 Scout
     const completion = await groq.chat.completions.create({
-      messages: [{ role: "user", content: contentPayload }],
-      model: "llama-3.2-11b-vision-preview", // Pastikan model vision aktif
-      temperature: 0.5,
+      messages: [
+        { 
+          role: "system", 
+          content: "Kamu adalah AutoSoal AI buatan Te Az Ha, asisten cerdas yang mahir menganalisis materi visual dan membuat soal ujian berkualitas." 
+        },
+        { 
+          role: "user", 
+          content: contentPayload 
+        }
+      ],
+      model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+      temperature: 0.6,
+      max_tokens: 4096,
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
@@ -92,10 +100,9 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         teksSoal = parts[0].trim();
         teksJawaban = parts[1].trim();
     } else {
-        // Fallback jika AI tidak mengikuti format separator
         const fallbackParts = fullContent.split(/Kunci Jawaban:|Jawaban:/i);
         teksSoal = fallbackParts[0].trim();
-        teksJawaban = fallbackParts[1] ? "Kunci Jawaban: " + fallbackParts[1].trim() : "Kunci jawaban disertakan di dalam teks.";
+        teksJawaban = fallbackParts[1] ? "Kunci Jawaban: " + fallbackParts[1].trim() : "Jawaban tersedia di dalam teks.";
     }
 
     // 7. Simpan ke Database History
@@ -108,7 +115,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
           return res.status(500).json({ error: "Gagal menyimpan riwayat ke database." });
         }
 
-        // Hapus file sementara di folder uploads setelah diproses
+        // Hapus file sementara setelah diproses
         req.files.forEach(file => {
           if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         });
@@ -125,7 +132,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
 
   } catch (err) {
     console.error("AI Error:", err);
-    res.status(500).json({ error: "Terjadi kesalahan pada sistem AI." });
+    res.status(500).json({ error: "Terjadi kesalahan pada sistem Llama 4 Scout." });
   }
 });
 
