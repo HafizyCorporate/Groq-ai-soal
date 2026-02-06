@@ -16,6 +16,29 @@ const upload = multer({ dest: uploadDir });
 router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
+
+    // --- LOGIKA LIMIT 1X SEHARI (KECUALI ADMIN) ---
+    const userId = req.session.user.id;
+    const userRole = req.session.user.role; 
+
+    if (userRole !== 'admin') {
+      const today = new Date().toISOString().split('T')[0];
+      const checkLimit = await new Promise((resolve) => {
+        db.get(
+          "SELECT COUNT(*) as total FROM history WHERE user_id = ? AND date(created_at) = ?", 
+          [userId, today], 
+          (err, row) => resolve(row ? row.total : 0)
+        );
+      });
+
+      if (checkLimit >= 1) {
+        return res.status(403).json({ 
+          error: "Jatah harian Anda habis (Maksimal 1x sehari). Hubungi Admin untuk upgrade ke Premium!" 
+        });
+      }
+    }
+    // --- AKHIR LOGIKA LIMIT ---
+
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
     
     const jumlahDiminta = req.body.jumlah || 5;
@@ -68,7 +91,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const teksJawaban = parts[1] ? parts[1].trim() : "Gagal memisahkan jawaban.";
 
     db.run(
-      "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
+      "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [req.session.user.id, teksSoal, teksJawaban],
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
