@@ -8,6 +8,7 @@ const Groq = require("groq-sdk");
 const router = express.Router();
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+// Konfigurasi Penyimpanan Gambar
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -15,12 +16,17 @@ const upload = multer({ dest: uploadDir });
 
 router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
-    if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
+    // 1. Validasi Sesi Login
+    if (!req.session.user) {
+      return res.status(401).json({ error: "Silakan login terlebih dahulu." });
+    }
 
     const userId = req.session.user.id;
     const userRole = req.session.user.role; 
 
-    if (userRole !== 'admin') {
+    // 2. Logika Limit (Hanya untuk role 'user')
+    // Admin dan Premium bebas limit
+    if (userRole === 'user') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
         db.get(
@@ -30,30 +36,37 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         );
       });
 
+      // Jika sudah 1x, kirim status 403 (Forbidden) untuk memicu Modal di Dashboard
       if (checkLimit >= 1) {
         return res.status(403).json({ 
-          error: "Jatah harian Anda habis (Maksimal 1x sehari). Hubungi Admin!" 
+          error: "Jatah harian habis. Silakan upgrade ke Premium!" 
         });
       }
     }
 
-    if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
+    // 3. Validasi Input
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: "Mohon upload minimal 1 gambar materi." });
+    }
     
     const jumlahDiminta = req.body.jumlah || 5;
     const jenisSoal = req.body.jenis || "PG";
 
-    // PERBAIKAN: Pastikan menggunakan backtick (`) dan tutup kurung dengan benar
+    // 4. Menyusun Payload untuk Groq AI
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${jenisSoal}. 
-        STRUKTUR OUTPUT WAJIB:
-        1. Tulis daftar soal.
-        2. Gunakan pemisah ###BATAS_AKHIR_SOAL### tepat setelah soal terakhir.
-        3. Tulis Kunci Jawaban dan Link Referensi Gambar di bawah pemisah tersebut.`
+        text: `Tugas: Analisis materi dari gambar yang diberikan. 
+               Buat TEPAT ${jumlahDiminta} soal dalam bentuk ${jenisSoal}.
+               
+               STRUKTUR OUTPUT WAJIB:
+               1. Tulis daftar soal lengkap.
+               2. Tulis pemisah ini: ###BATAS_AKHIR_SOAL###
+               3. Tulis Kunci Jawaban di bawah pemisah tersebut.`
       }
     ];
 
+    // Mengonversi Gambar ke Base64 agar bisa dibaca AI
     req.files.forEach(file => {
       const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
       contentPayload.push({
@@ -62,9 +75,10 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       });
     });
 
+    // 5. Memanggil API Groq
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: contentPayload }],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+      model: "llama-3.2-11b-vision-preview", // Pastikan model vision aktif
       temperature: 0.5,
     });
 
@@ -72,22 +86,34 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     let teksSoal = "";
     let teksJawaban = "";
 
+    // 6. Memisahkan Soal dan Jawaban berdasarkan separator
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
         const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
         teksSoal = parts[0].trim();
         teksJawaban = parts[1].trim();
     } else {
-        const fallbackParts = fullContent.split(/--- KUNCI JAWABAN ---|Kunci Jawaban:/i);
+        // Fallback jika AI tidak mengikuti format separator
+        const fallbackParts = fullContent.split(/Kunci Jawaban:|Jawaban:/i);
         teksSoal = fallbackParts[0].trim();
-        teksJawaban = fallbackParts[1] ? "--- KUNCI JAWABAN --- " + fallbackParts[1].trim() : "Gagal memisahkan jawaban.";
+        teksJawaban = fallbackParts[1] ? "Kunci Jawaban: " + fallbackParts[1].trim() : "Kunci jawaban disertakan di dalam teks.";
     }
 
+    // 7. Simpan ke Database History
     db.run(
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [userId, teksSoal, teksJawaban],
       function (err) {
-        if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
-        req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: "Gagal menyimpan riwayat ke database." });
+        }
+
+        // Hapus file sementara di folder uploads setelah diproses
+        req.files.forEach(file => {
+          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+        });
+
+        // 8. Kirim Respon Sukses ke Dashboard
         res.json({
           success: true,
           soal: teksSoal,
@@ -96,8 +122,10 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         });
       }
     );
+
   } catch (err) {
-    res.status(500).json({ error: "Gagal memproses AI." });
+    console.error("AI Error:", err);
+    res.status(500).json({ error: "Terjadi kesalahan pada sistem AI." });
   }
 });
 
