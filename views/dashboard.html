@@ -12,7 +12,7 @@
         .modal-active { overflow: hidden; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen flex flex-col">
 
     <div id="limitModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
         <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center transform scale-95 transition-transform duration-300">
@@ -22,7 +22,7 @@
             <h3 class="text-2xl font-bold text-gray-800 mb-2">Jatah Harian Habis!</h3>
             <p class="text-gray-600 mb-6 leading-relaxed">
                 Bilamana ingin menggunakan lebih banyak harap hubungi admin. <br>
-                <span class="font-bold text-blue-600 italic text-lg">Hanya Rp 5.000 / Bulan</span>
+                <span class="font-bold text-blue-600 italic text-lg">Member bulanan hanya Rp 5.000</span>
             </p>
             <div class="space-y-3">
                 <a href="https://wa.me/6282240400388" target="_blank" class="block w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2 shadow-lg shadow-green-200">
@@ -47,7 +47,7 @@
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-6">
+    <main class="max-w-4xl mx-auto p-6 flex-grow">
         <div class="bg-white rounded-2xl shadow-sm border p-6 mb-8">
             <h2 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
                 <i class="fas fa-magic text-blue-500 mr-2"></i> Buat Soal Otomatis
@@ -107,6 +107,12 @@
         </div>
     </main>
 
+    <footer class="py-8 text-center">
+        <p class="text-gray-400 text-sm font-medium tracking-widest uppercase">
+            Made by : <span class="text-gray-600 font-bold">Te Az Ha</span>
+        </p>
+    </footer>
+
     <script>
         const aiForm = document.getElementById('aiForm');
         const btnProses = document.getElementById('btnProses');
@@ -157,7 +163,6 @@
                     document.getElementById('jawabanContent').textContent = data.jawaban;
                     resultArea.classList.remove('hidden');
                 } else if (response.status === 403) {
-                    // Tampilkan Pop-up jika kena limit
                     showLimitModal();
                 } else {
                     alert('Gagal: ' + data.error);
