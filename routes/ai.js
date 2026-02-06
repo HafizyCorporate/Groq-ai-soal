@@ -22,27 +22,29 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis semua gambar yang diberikan (${req.files.length} gambar). Buat ${req.body.jumlah} soal ${req.body.jenis}.
+        text: `Tugas: Analisis materi dari gambar yang diberikan. Buat ${req.body.jumlah} soal ${req.body.jenis}.
         
         KOMPOSISI SOAL:
-        - 80% soal berbasis teks (berdasarkan materi).
-        - 20% soal berbasis pengamatan gambar (visual). Contoh: "Hewan apakah yang ada pada gambar?" atau "Benda apa yang ditunjukkan tanda panah?".
+        - 80% soal teks, 20% soal visual (contoh: "Gambar apakah ini?").
 
-        Aturan Format Soal:
-        1. JANGAN menuliskan "Soal PG:" atau "Soal Essay:" di depan nomor.
-        2. Gunakan format penomoran langsung: "1) [Pertanyaan]".
-        3. JANGAN ada rangkuman materi. Langsung ke daftar soal.
-        4. Antar nomor soal berikan jarak 2 baris kosong.
+        ATURAN LINK GAMBAR (GOOGLE SEARCH):
+        1. JANGAN gunakan Unsplash atau Picsum jika tidak suka.
+        2. Gunakan format link pencarian langsung agar siswa bisa klik dan lihat hasilnya:
+           https://www.google.com/search?q=[keyword]&tbm=isch
+        3. Ganti [keyword] dengan subjek soal. Contoh jika soal monyet:
+           https://www.google.com/search?q=gambar+monyet+lucu&tbm=isch
         
-        Aturan Referensi Gambar:
-        1. Cari link gambar Unsplash yang BENAR-BENAR RELEVAN dengan soal visual tersebut (Contoh: Soal monyet harus link gambar monyet).
-        2. Letakkan SEMUA link gambar di bagian paling akhir setelah Kunci Jawaban.
-        3. WAJIB tuliskan nomor soal untuk setiap link. Contoh: "Soal No 1: [Link Unsplash]".
-        4. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
+        ATURAN FORMAT:
+        1. JANGAN tulis label "Soal PG:". Langsung nomor: "1) [Pertanyaan]".
+        2. Berikan jarak 2 baris antar soal.
+        
+        ATURAN REFERENSI GAMBAR:
+        1. Taruh link di halaman terakhir setelah Kunci Jawaban.
+        2. WAJIB tuliskan nomor soalnya. Contoh: "Soal No 1: [Link Google]".
+        3. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
 
         Aturan Jawaban:
-        1. HANYA 1 jawaban benar.
-        2. Taruh semua kunci setelah pemisah ===JAWABAN===.`
+        1. HANYA 1 jawaban benar. Pisahkan dengan ===JAWABAN===.`
       }
     ];
 
@@ -72,10 +74,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
         res.json({
-          success: true,
-          soal: teksSoal,
-          jawaban: teksJawaban,
-          historyId: this.lastID,
+          success: true, soal: teksSoal, jawaban: teksJawaban, historyId: this.lastID,
         });
       }
     );
