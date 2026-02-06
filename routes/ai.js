@@ -20,7 +20,6 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const userId = req.session.user.id;
     const userRole = req.session.user.role; 
 
-    // --- LOGIKA LIMIT 1X SEHARI (KECUALI ADMIN VERSACY) ---
     if (userRole !== 'admin') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
@@ -31,43 +30,27 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         );
       });
 
-      
-if (checkLimit >= 1) {
-    return res.status(403).json({ 
-        error: `Jatah harian Anda habis (Maksimal 1x sehari). 
-        
-Bilamana ingin menggunakan lebih banyak harap hubungi admin:
-Whatsapp: 082240400388 (https://wa.me/6282240400388)
-Member bulanan hanya Rp 5.000
-    });
-}
-
+      if (checkLimit >= 1) {
+        return res.status(403).json({ 
+          error: "Jatah harian Anda habis (Maksimal 1x sehari). Hubungi Admin!" 
+        });
+      }
+    }
 
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
     
     const jumlahDiminta = req.body.jumlah || 5;
+    const jenisSoal = req.body.jenis || "PG";
 
+    // PERBAIKAN: Pastikan menggunakan backtick (`) dan tutup kurung dengan benar
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${req.body.jenis}.
-
+        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${jenisSoal}. 
         STRUKTUR OUTPUT WAJIB:
-        1. Tulis daftar soal terlebih dahulu.
+        1. Tulis daftar soal.
         2. Gunakan pemisah ###BATAS_AKHIR_SOAL### tepat setelah soal terakhir.
-        3. Tulis Kunci Jawaban dan Link Referensi Gambar di bawah pemisah tersebut.
-
-        ATURAN PENULISAN:
-        - Soal: "1) [Pertanyaan]"
-        - Link Google Image: "https://www.google.com/search?q=[keyword]&tbm=isch"
-
-        CONTOH FORMAT AKHIR:
-        [Daftar Soal...]
-        ###BATAS_AKHIR_SOAL###
-        --- KUNCI JAWABAN ---
-        [Isi Jawaban...]
-        --- DOWNLOAD REFERENSI GAMBAR ---
-        [Isi Link...]`
+        3. Tulis Kunci Jawaban dan Link Referensi Gambar di bawah pemisah tersebut.`
       }
     ];
 
@@ -86,8 +69,6 @@ Member bulanan hanya Rp 5.000
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
-    
-    // Logika Pemisahan yang Disempurnakan
     let teksSoal = "";
     let teksJawaban = "";
 
@@ -96,10 +77,9 @@ Member bulanan hanya Rp 5.000
         teksSoal = parts[0].trim();
         teksJawaban = parts[1].trim();
     } else {
-        // Fallback jika AI tidak menyertakan tanda pagar
         const fallbackParts = fullContent.split(/--- KUNCI JAWABAN ---|Kunci Jawaban:/i);
         teksSoal = fallbackParts[0].trim();
-        teksJawaban = fallbackParts[1] ? "--- KUNCI JAWABAN --- " + fallbackParts[1].trim() : "Gagal memisahkan jawaban secara otomatis.";
+        teksJawaban = fallbackParts[1] ? "--- KUNCI JAWABAN --- " + fallbackParts[1].trim() : "Gagal memisahkan jawaban.";
     }
 
     db.run(
@@ -111,7 +91,7 @@ Member bulanan hanya Rp 5.000
         res.json({
           success: true,
           soal: teksSoal,
-          jawaban: teksJawaban, // Data ini yang akan tampil di kolom hitam
+          jawaban: teksJawaban,
           historyId: this.lastID,
         });
       }
