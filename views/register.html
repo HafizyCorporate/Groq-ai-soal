@@ -1,27 +1,42 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar | AI Soal Foto</title>
-  <link rel="stylesheet" href="/css/style.css">
+    <meta charset="UTF-8">
+    <title>Daftar Akun</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="auth-bg">
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h2 class="text-2xl font-bold mb-6 text-center">Daftar Akun Baru</h2>
+        <form id="regForm" class="space-y-4">
+            <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded" required>
+            <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required>
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Daftar Sekarang</button>
+        </form>
+        <p class="mt-4 text-center text-sm">Sudah punya akun? <a href="/" class="text-blue-500">Login</a></p>
+    </div>
 
-  <div class="auth-card">
-    <h2>Daftar Akun</h2>
+    <script>
+        document.getElementById('regForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-    <form action="/auth/register" method="POST">
-      <input type="email" name="email" placeholder="Email" required>
-      <input type="password" name="password" placeholder="Password" required>
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
 
-      <button type="submit">Daftar</button>
-    </form>
-
-    <p class="auth-link">
-      Sudah punya akun? <a href="/">Login</a>
-    </p>
-  </div>
-
+            const data = await response.json();
+            if (data.success) {
+                alert('Pendaftaran Berhasil! Silakan Login.');
+                window.location.href = '/';
+            } else {
+                alert('Error: ' + data.error);
+            }
+        };
+    </script>
 </body>
 </html>
