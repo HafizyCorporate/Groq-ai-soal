@@ -2,19 +2,34 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Daftar Akun</title>
+    <title>Daftar Akun - Pembuat Soal AI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 class="text-2xl font-bold mb-6 text-center">Daftar Akun Baru</h2>
+<body class="bg-blue-50 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md mx-4">
+        <h2 class="text-3xl font-extrabold mb-2 text-center text-blue-600">Daftar Akun</h2>
+        <p class="text-center text-gray-500 mb-8">Buat akun untuk mulai membuat soal otomatis</p>
+        
         <form id="regForm" class="space-y-4">
-            <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded" required>
-            <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded" required>
-            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Daftar Sekarang</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="email" placeholder="contoh@email.com" 
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" id="password" placeholder="********" 
+                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold p-3 rounded-lg hover:bg-blue-700 transition duration-300">
+                Daftar Sekarang
+            </button>
         </form>
-        <p class="mt-4 text-center text-sm">Sudah punya akun? <a href="/" class="text-blue-500">Login</a></p>
+        
+        <div class="mt-6 text-center">
+            <p class="text-gray-600 text-sm">Sudah punya akun? <a href="/" class="text-blue-500 font-semibold hover:underline">Login di sini</a></p>
+        </div>
     </div>
 
     <script>
@@ -23,18 +38,24 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            const response = await fetch('/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-            const data = await response.json();
-            if (data.success) {
-                alert('Pendaftaran Berhasil! Silakan Login.');
-                window.location.href = '/';
-            } else {
-                alert('Error: ' + data.error);
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Pendaftaran Berhasil! Silakan Login menggunakan email dan password Anda.');
+                    // LEMPAR KE HALAMAN LOGIN
+                    window.location.href = '/'; 
+                } else {
+                    alert('Gagal Daftar: ' + data.error);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi ke server.');
             }
         };
     </script>
