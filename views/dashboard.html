@@ -15,22 +15,23 @@
 <body class="bg-slate-50 min-h-screen flex flex-col">
 
     <div id="limitModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center transform scale-95 transition-transform duration-300">
-            <div class="w-20 h-20 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-crown text-4xl"></i>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center">
+            <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-crown text-3xl"></i>
             </div>
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">Jatah Harian Habis!</h3>
-            <p class="text-gray-600 mb-6 leading-relaxed">
-                Bilamana ingin menggunakan lebih banyak harap hubungi admin. <br>
-                <span class="font-bold text-blue-600 italic text-lg">Member bulanan hanya Rp 5.000</span>
-            </p>
+            <h3 class="text-xl font-bold text-gray-800">Limit Harian Habis!</h3>
+            <p class="text-sm text-gray-500 mb-6">Buka akses sepuasnya hanya <br> <span class="text-blue-600 font-bold">Rp 5.000 / Bulan</span></p>
+            
+            <div class="bg-gray-100 p-4 rounded-2xl mb-6 border-2 border-dashed border-gray-300">
+                <img src="/images/qris.jpg" alt="Scan QRIS" class="mx-auto rounded-lg shadow-md w-40 h-40 object-contain bg-white">
+                <p class="text-[10px] text-gray-400 mt-2 italic text-center">Scan QRIS & Bayar Rp 5.000</p>
+            </div>
+
             <div class="space-y-3">
-                <a href="https://wa.me/6282240400388" target="_blank" class="block w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2 shadow-lg shadow-green-200">
-                    <i class="fab fa-whatsapp text-xl"></i> Hubungi Admin
-                </a>
-                <button onclick="closeLimitModal()" class="block w-full bg-gray-100 text-gray-500 font-semibold py-3 rounded-xl hover:bg-gray-200 transition">
-                    Nanti Saja
+                <button onclick="kirimKonfirmasiWA()" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2">
+                    <i class="fab fa-whatsapp text-xl"></i> Konfirmasi ke WA
                 </button>
+                <button onclick="closeLimitModal()" class="w-full text-gray-400 text-sm font-medium">Nanti Saja</button>
             </div>
         </div>
     </div>
@@ -41,13 +42,12 @@
             <h1 class="text-xl font-bold text-gray-800 tracking-tight">AutoSoal <span class="text-blue-600">AI</span></h1>
         </div>
         <div class="flex items-center gap-4">
-            <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">
-                <i class="fas fa-sign-out-alt mr-1"></i> Logout
-            </a>
+            <span id="usernameDisplay" class="text-gray-800 font-bold hidden md:block">User</span>
+            <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">Logout</a>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-6 flex-grow">
+    <main class="max-w-4xl mx-auto p-6 flex-grow w-full">
         <div class="bg-white rounded-2xl shadow-sm border p-6 mb-8">
             <h2 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
                 <i class="fas fa-magic text-blue-500 mr-2"></i> Buat Soal Otomatis
@@ -55,20 +55,20 @@
             <form id="aiForm" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-700">Upload Materi (Maksimal 5 Gambar)</label>
-                        <input type="file" id="foto" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                        <label class="block text-sm font-semibold text-gray-700">Upload Materi (Maks 5 Gambar)</label>
+                        <input type="file" id="foto" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2">
                             <label class="block text-sm font-semibold text-gray-700">Jenis</label>
-                            <select id="jenis" class="w-full p-2.5 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                            <select id="jenis" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="PG">Pilihan Ganda</option>
                                 <option value="Essay">Essay</option>
                             </select>
                         </div>
                         <div class="space-y-2">
                             <label class="block text-sm font-semibold text-gray-700">Jumlah</label>
-                            <input type="number" id="jumlah" value="5" min="1" max="20" class="w-full p-2.5 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="jumlah" value="5" min="1" max="20" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
                 </div>
@@ -80,35 +80,25 @@
 
         <div id="loading" class="hidden text-center py-12">
             <div class="animate-spin inline-block w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-            <p class="text-gray-500 italic">AI sedang merangkum gambar dan menyusun soal...</p>
+            <p class="text-gray-500 italic">AI sedang menyusun soal...</p>
         </div>
 
         <div id="resultArea" class="hidden space-y-6">
             <div class="flex gap-3">
-                <button id="btnExport" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2">
-                    <i class="fas fa-file-word"></i> Download Word
-                </button>
-                <button onclick="copyAll()" class="bg-gray-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-black transition">
-                    <i class="far fa-copy"></i>
-                </button>
+                <button id="btnExport" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2"><i class="fas fa-file-word"></i> Download Word</button>
+                <button onclick="copyAll()" class="bg-gray-800 text-white px-6 rounded-xl hover:bg-black transition"><i class="far fa-copy"></i></button>
             </div>
-
             <div class="bg-white rounded-2xl shadow-sm border p-8">
-                <h3 class="font-bold text-gray-800 text-lg mb-6 border-b pb-2 flex items-center">
-                    <i class="fas fa-list-ol text-blue-500 mr-2"></i> Daftar Soal
-                </h3>
-                <pre id="soalContent" class="text-gray-700 font-sans leading-relaxed whitespace-pre-wrap text-sm md:text-base"></pre>
+                <pre id="soalContent" class="text-gray-700 whitespace-pre-wrap"></pre>
             </div>
-
             <div class="bg-slate-900 rounded-2xl shadow-xl p-8 text-white">
-                <h3 class="font-bold text-lg text-blue-400 mb-4 flex items-center"><i class="fas fa-key mr-2"></i> Kunci Jawaban</h3>
-                <pre id="jawabanContent" class="font-mono text-sm leading-relaxed whitespace-pre-wrap opacity-90"></pre>
+                <pre id="jawabanContent" class="opacity-90 whitespace-pre-wrap"></pre>
             </div>
         </div>
     </main>
 
     <footer class="py-8 text-center">
-        <p class="text-gray-400 text-sm font-medium tracking-widest uppercase">
+        <p class="text-gray-400 text-xs font-medium tracking-widest uppercase">
             Made by : <span class="text-gray-600 font-bold">Te Az Ha</span>
         </p>
     </footer>
@@ -131,27 +121,25 @@
             document.body.classList.remove('modal-active');
         }
 
+        function kirimKonfirmasiWA() {
+            const user = "USER_KAMU"; // Ini bisa dinamis dari backend
+            const pesan = `Halo Te Az Ha! 👋%0ASaya sudah bayar Premium Rp 5.000.%0AUsername: ${user}%0AMohon diaktifkan.`;
+            window.open(`https://wa.me/6282240400388?text=${pesan}`, '_blank');
+        }
+
         aiForm.onsubmit = async (e) => {
             e.preventDefault();
             const formData = new FormData();
             const fileInput = document.getElementById('foto');
-            
-            if (fileInput.files.length > 5) {
-                alert("Maksimal 5 gambar saja ya!");
-                return;
-            }
-
             for (let i = 0; i < fileInput.files.length; i++) {
                 formData.append('foto', fileInput.files[i]);
             }
-            
             formData.append('jenis', document.getElementById('jenis').value);
             formData.append('jumlah', document.getElementById('jumlah').value);
 
             loading.classList.remove('hidden');
             resultArea.classList.add('hidden');
             btnProses.disabled = true;
-            btnProses.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> Memproses...';
 
             try {
                 const response = await fetch('/ai/process', { method: 'POST', body: formData });
@@ -167,26 +155,21 @@
                 } else {
                     alert('Gagal: ' + data.error);
                 }
-            } catch (err) { 
-                alert('Koneksi bermasalah.'); 
-            }
+            } catch (err) { alert('Koneksi bermasalah.'); }
             finally {
                 loading.classList.add('hidden');
                 btnProses.disabled = false;
-                btnProses.innerHTML = '<i class="fas fa-rocket"></i> Proses Sekarang';
             }
         };
 
         document.getElementById('btnExport').onclick = () => {
             if (currentHistoryId) window.location.href = `/export/word/${currentHistoryId}`;
-            else alert('Proses soal dulu!');
         };
 
         function copyAll() {
-            const soal = document.getElementById('soalContent').innerText;
-            const jawaban = document.getElementById('jawabanContent').innerText;
-            navigator.clipboard.writeText(soal + "\n\n=== JAWABAN ===\n\n" + jawaban);
-            alert('Berhasil disalin!');
+            const txt = document.getElementById('soalContent').innerText + "\n\n" + document.getElementById('jawabanContent').innerText;
+            navigator.clipboard.writeText(txt);
+            alert('Teks disalin!');
         }
     </script>
 </body>
