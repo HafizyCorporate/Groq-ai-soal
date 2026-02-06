@@ -1,27 +1,73 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | AI Soal Foto</title>
-  <link rel="stylesheet" href="/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AI Pembuat Soal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="auth-bg">
+<body class="bg-gray-50 flex items-center justify-center h-screen">
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-blue-600 italic">AutoSoal AI</h2>
+            <p class="text-gray-500">Silakan masuk ke akun kamu</p>
+        </div>
+        
+        <form id="loginForm" class="space-y-5">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <input type="email" id="email" placeholder="nama@email.com" 
+                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" required>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                <input type="password" id="password" placeholder="********" 
+                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" required>
+            </div>
+            
+            <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white font-bold p-3 rounded-xl hover:bg-blue-700 shadow-lg transform active:scale-95 transition">
+                Masuk Sekarang
+            </button>
+        </form>
+        
+        <div class="mt-6 text-center text-sm text-gray-600">
+            Belum punya akun? <a href="/register" class="text-blue-500 font-bold hover:underline">Daftar di sini</a>
+        </div>
+    </div>
 
-  <div class="auth-card">
-    <h2>Login</h2>
+    <script>
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnLogin');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-    <form action="/auth/login" method="POST">
-      <input type="email" name="email" placeholder="Email" required>
-      <input type="password" name="password" placeholder="Password" required>
+            btn.innerText = 'Checking...';
+            btn.disabled = true;
 
-      <button type="submit">Masuk</button>
-    </form>
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
 
-    <p class="auth-link">
-      Belum punya akun? <a href="/register">Daftar</a>
-    </p>
-  </div>
-
+                const data = await response.json();
+                
+                if (data.success) {
+                    // INI KUNCINYA: Langsung lempar ke dashboard
+                    window.location.href = '/dashboard'; 
+                } else {
+                    alert('Gagal: ' + data.error);
+                    btn.innerText = 'Masuk Sekarang';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Koneksi server terputus');
+                btn.innerText = 'Masuk Sekarang';
+                btn.disabled = false;
+            }
+        };
+    </script>
 </body>
 </html>
