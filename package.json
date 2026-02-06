@@ -1,7 +1,6 @@
 {
   "name": "ai-soal-otomatis",
   "version": "1.0.0",
-  "description": "Aplikasi AI Pembuat Soal via Foto",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
