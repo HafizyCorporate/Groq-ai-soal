@@ -1,35 +1,64 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
-const { Document, Packer, Paragraph, TextRun } = require("docx");
-const db = require("../db");
 const router = express.Router();
+const db = require("../db");
+const { Document, Packer, Paragraph, TextRun, AlignmentType, Break } = require("docx");
 
-router.get("/:historyId", async (req, res) => {
-  db.get("SELECT * FROM history WHERE id = ?", [req.params.historyId], async (err, row) => {
-    if (!row) return res.status(404).send("Data tidak ditemukan");
+router.get("/word/:id", (req, res) => {
+    const historyId = req.params.id;
 
-    const children = [];
-    
-    // Judul Soal
-    children.push(new Paragraph({ children: [new TextRun({ text: "DAFTAR SOAL", bold: true, size: 28 })] }));
-    row.soal.split("\n").forEach(line => children.push(new Paragraph({ text: line })));
+    db.get("SELECT * FROM history WHERE id = ?", [historyId], (err, data) => {
+        if (err || !data) return res.status(404).send("Data tidak ditemukan");
 
-    // Jarak
-    children.push(new Paragraph({ text: "" }));
+        // Pisahkan soal berdasarkan nomor agar bisa kita atur per blok
+        const soalLines = data.soal.split(/\n/); 
 
-    // Judul Jawaban
-    children.push(new Paragraph({ children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 28 })] }));
-    row.jawaban.split("\n").forEach(line => children.push(new Paragraph({ text: line })));
+        const doc = new Document({
+            sections: [{
+                children: [
+                    // --- KOP SURAT ---
+                    new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                            new TextRun({ text: "YAYASAN PENDIDIKAN AUTO SOAL", bold: true, size: 28 }),
+                            new Break(),
+                            new TextRun({ text: "UJIAN AKHIR SEMESTER BERBASIS AI", bold: true, size: 24 }),
+                            new Break(),
+                            new TextRun({ text: "Tahun Ajaran 2025/2026", size: 20 }),
+                        ],
+                    }),
+                    new Paragraph({ text: "__________________________________________________________", alignment: AlignmentType.CENTER }),
+                    new Paragraph({ text: "", spacing: { after: 400 } }),
 
-    const doc = new Document({ sections: [{ children }] });
-    const fileName = `Export-${Date.now()}.docx`;
-    const filePath = path.join(__dirname, "../uploads", fileName);
+                    // --- ISI SOAL ---
+                    ...soalLines.map(line => {
+                        return new Paragraph({
+                            children: [ new TextRun({ text: line, size: 24 }) ],
+                            // KUNCINYA: keepNext & keepLines mencegah soal terpisah dari pilihan jawaban
+                            keepNext: true,
+                            keepLines: true,
+                            spacing: { after: 100 }
+                        });
+                    }),
 
-    const buffer = await Packer.toBuffer(doc);
-    fs.writeFileSync(filePath, buffer);
-    res.json({ wordFile: `/uploads/${fileName}` });
-  });
+                    // --- HALAMAN BARU KUNCI JAWABAN ---
+                    new Paragraph({ children: [new Break({ type: "page" })] }),
+                    new Paragraph({
+                        children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 28, underline: {} })],
+                        spacing: { after: 200 }
+                    }),
+                    new Paragraph({
+                        children: [new TextRun({ text: data.jawaban, size: 24 })],
+                    }),
+                ],
+            }],
+        });
+
+        Packer.toBuffer(doc).then((buffer) => {
+            res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+            res.setHeader("Content-Disposition", `attachment; filename=Soal_Ujian.docx`);
+            res.send(buffer);
+        });
+    });
 });
 
 module.exports = router;
