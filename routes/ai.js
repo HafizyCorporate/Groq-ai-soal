@@ -24,40 +24,31 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     const jenisSoal = req.body.jenis; 
     const jumlahSoal = req.body.jumlah;
 
-    // PROMPT SUPER LENGKAP: Fokus Soal, Link Gambar, & No Rangkuman
-    const prompt = `Tugas: Buat soal berdasarkan gambar yang diunggah.
+    const prompt = `Tugas: Buat soal berdasarkan gambar.
     
-    Aturan Utama:
-    1. Buat ${jumlahSoal} soal ${jenisSoal}. 
-    2. JANGAN membuat rangkuman materi atau teks pembuka. Langsung ke nomor soal.
+    Aturan Format Soal:
+    1. Buat ${jumlahSoal} soal ${jenisSoal}.
+    2. JANGAN menuliskan "Soal PG:" atau "Soal Essay:" di depan nomor.
+    3. Gunakan format penomoran langsung: "1) [Pertanyaan]".
+    4. JANGAN ada rangkuman materi. Langsung ke daftar soal.
+    5. Antar nomor soal berikan jarak 2 baris kosong.
     
-    Aturan Gambar (PENTING):
-    - Jika soal memungkinkan (hewan, tumbuhan, benda), sertakan emoji yang relevan.
-    - Cari dan cantumkan link gambar yang valid dari Unsplash di bawah soal tersebut.
-    - Format link: [Lihat Gambar: https://source.unsplash.com/featured/?nama-benda]
-    
-    Aturan Pilihan Ganda (PG):
-    - HANYA ada 1 jawaban benar. 3 jawaban lainnya harus tidak nyambung (out of context).
-    - Berikan 1 baris kosong antara soal dan pilihan A.
-    - Berikan 2 baris kosong antar nomor soal agar tidak mepet saat di-export.
-    
-    Aturan Essay:
-    - Berikan 1 baris kosong antar nomor soal.
-    
-    Kunci Jawaban:
-    - Kumpulkan SEMUA kunci jawaban di bagian paling akhir setelah pemisah ===JAWABAN===.`;
+    Aturan Referensi Gambar:
+    1. Cari link gambar yang relevan dari Unsplash.
+    2. JANGAN taruh link gambar di bawah soal.
+    3. Kumpulkan SEMUA link gambar di bagian paling akhir, di bawah Kunci Jawaban.
+    4. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
+
+    Aturan Jawaban:
+    1. HANYA 1 jawaban benar, lainnya tidak nyambung (out of context).
+    2. Taruh semua kunci setelah pemisah ===JAWABAN===.`;
 
     const completion = await groq.chat.completions.create({
       messages: [
-        {
-          role: "user",
-          content: [
+        { role: "user", content: [
             { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: { url: `data:image/jpeg;base64,${base64Image}` },
-            },
-          ],
+            { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+          ]
         },
       ],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
