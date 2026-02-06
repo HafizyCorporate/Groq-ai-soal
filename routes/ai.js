@@ -21,8 +21,31 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     const imagePath = req.files[0].path;
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
 
-    const prompt = `Rangkum materi dari gambar ini dan buatkan ${req.body.jumlah} soal ${req.body.jenis}. 
-    PENTING: Pisahkan soal dan jawaban HANYA dengan kata kunci ===JAWABAN===.`;
+    // Menyesuaikan instruksi berdasarkan jenis soal yang dipilih user
+    const jenisSoal = req.body.jenis; // 'PG' atau 'Essay'
+    const jumlahSoal = req.body.jumlah;
+
+    const prompt = `Tugas: Buat soal dari gambar yang diberikan.
+    
+    Aturan Format:
+    1. Buat ${jumlahSoal} soal ${jenisSoal}. JANGAN membuat rangkuman materi.
+    2. Jika Pilihan Ganda:
+       - Berikan 1 baris kosong antara pertanyaan dan pilihan A.
+       - Berikan 2 baris kosong antara nomor soal (jarak antar soal).
+       - Format pilihan: A. [teks], B. [teks], dst.
+    3. Jika Essay:
+       - Berikan 1 baris kosong antar nomor soal (jarak antar soal).
+    4. Kunci Jawaban:
+       - JANGAN tulis jawaban di bawah soal langsung.
+       - Tuliskan SEMUA kunci jawaban di bagian paling akhir setelah tanda ===JAWABAN===.
+    
+    Contoh Output Akhir:
+    [Seluruh Soal]
+    
+    ===JAWABAN===
+    Jawaban ${jenisSoal}:
+    1. ...
+    2. ...`;
 
     const completion = await groq.chat.completions.create({
       messages: [
@@ -38,7 +61,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
         },
       ],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.6,
+      temperature: 0.7,
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
