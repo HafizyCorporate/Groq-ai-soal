@@ -1,102 +1,155 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Groq AI Soal</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-* { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
-body { background: #f5f5f5; color:#333; }
-.container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-h1 { text-align:center; margin-bottom:20px; font-size:1.8rem; }
-form { display:flex; flex-direction:column; gap:15px; }
-.input-group { display: flex; gap: 10px; }
-input[type="number"], select, textarea { width: 100%; padding: 10px; border-radius:5px; border:1px solid #ccc; font-size:1rem; }
-.btn { flex: 1; background:#eee; color:#333; padding:12px; border-radius:5px; cursor:pointer; text-align:center; border: 1px solid #ddd; }
-.btn-green { background:#28a745; color:#fff; padding:15px; border:none; border-radius:5px; cursor:pointer; font-size:1.1rem; font-weight:bold; }
-#fileName { font-size:0.9rem; color:#007bff; text-align:center; }
-.actions { display:flex; gap:10px; margin-top:10px; }
-.actions button { flex:1; font-size:1.1rem; padding:15px; border-radius:8px; background:#007bff; color:#fff; border:none; cursor:pointer; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AutoSoal AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
-<body>
-<div class="container">
-  <h1>Otomatis Jawab Soal via Foto</h1>
+<body class="bg-slate-50 min-h-screen">
 
-  <form id="aiForm" enctype="multipart/form-data">
-    <div class="input-group">
-      <label class="btn">
-        📷 Ambil Foto
-        <input type="file" name="foto" id="foto" accept="image/*" capture="camera" hidden>
-      </label>
-      <label class="btn">
-        🖼️ Pilih Media (Maks 10)
-        <input type="file" name="foto" id="media" accept="image/*" multiple hidden>
-      </label>
-    </div>
-    <div id="fileName">Belum ada file terpilih</div>
+    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-blue-600 p-2 rounded-lg">
+                <i class="fas fa-robot text-white"></i>
+            </div>
+            <h1 class="text-xl font-bold text-gray-800 tracking-tight">AutoSoal <span class="text-blue-600">AI</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">
+                <i class="fas fa-sign-out-alt mr-1"></i> Logout
+            </a>
+        </div>
+    </nav>
 
-    <select name="jenis" required>
-      <option value="">Pilih Jenis Soal</option>
-      <option value="Pilihan Ganda">Pilihan Ganda</option>
-      <option value="Essay">Essay</option>
-      <option value="Pilihan Ganda dan Essay">PG + Essay</option>
-    </select>
+    <main class="max-w-4xl mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-sm border p-6 mb-8">
+            <h2 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
+                <i class="fas fa-magic text-blue-500 mr-2"></i> Buat Soal Otomatis
+            </h2>
+            <form id="aiForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Upload Materi (Foto)</label>
+                        <input type="file" id="foto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">Jenis</label>
+                            <select id="jenis" class="w-full p-2.5 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="PG">Pilihan Ganda</option>
+                                <option value="Essay">Essay</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">Jumlah</label>
+                            <input type="number" id="jumlah" value="5" min="1" max="20" class="w-full p-2.5 border rounded-xl bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="btnProses" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                    <i class="fas fa-rocket"></i> Proses Sekarang
+                </button>
+            </form>
+        </div>
 
-    <input type="number" name="jumlah" placeholder="Jumlah Soal" required>
-    <button type="submit" class="btn-green">🚀 Proses ke AI</button>
-  </form>
+        <div id="loading" class="hidden text-center py-12">
+            <div class="animate-spin inline-block w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
+            <p class="text-gray-500 italic">AI sedang menganalisis gambar dan menyusun soal...</p>
+        </div>
 
-  <hr style="margin:20px 0;">
-  <h3>Soal</h3>
-  <textarea id="soal" rows="8" readonly placeholder="Hasil soal..."></textarea>
-  <h3>Jawaban</h3>
-  <textarea id="jawaban" rows="8" readonly placeholder="Hasil jawaban..."></textarea>
+        <div id="resultArea" class="hidden space-y-6 animate-bottom">
+            <div class="flex gap-3">
+                <button id="btnExport" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl hover:bg-green-700 transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fas fa-file-word"></i> Download Word
+                </button>
+                <button onclick="copyAll()" class="bg-gray-800 text-white font-bold py-3 px-6 rounded-xl hover:bg-black transition shadow-md">
+                    <i class="far fa-copy"></i>
+                </button>
+            </div>
 
-  <div class="actions">
-    <button type="button" onclick="window.print()">🖨️ Print</button>
-    <button type="button" id="exportWordBtn">📄 Export Word</button>
-  </div>
-</div>
+            <div class="bg-white rounded-2xl shadow-sm border p-8">
+                <h3 class="font-bold text-gray-800 text-lg mb-6 border-b pb-2 flex items-center">
+                    <i class="fas fa-list-ol text-blue-500 mr-2"></i> Daftar Soal
+                </h3>
+                <pre id="soalContent" class="text-gray-700 font-sans leading-relaxed whitespace-pre-wrap text-sm md:text-base"></pre>
+            </div>
 
-<script>
-const fotoIn = document.getElementById("foto");
-const mediaIn = document.getElementById("media");
-const fileNameDisp = document.getElementById("fileName");
-let currentHistoryId = null;
+            <div class="bg-slate-900 rounded-2xl shadow-xl p-8 text-white">
+                <h3 class="font-bold text-lg text-blue-400 mb-4 flex items-center">
+                    <i class="fas fa-key mr-2"></i> Kunci Jawaban
+                </h3>
+                <pre id="jawabanContent" class="font-mono text-sm leading-relaxed whitespace-pre-wrap opacity-90"></pre>
+            </div>
+        </div>
+    </main>
 
-const updateLabel = (input) => {
-  const count = input.files.length;
-  if(count > 10) { alert("Maksimal 10 gambar!"); input.value = ""; return; }
-  fileNameDisp.textContent = count > 0 ? `${count} file terpilih` : "Belum ada file terpilih";
-};
+    <script>
+        const aiForm = document.getElementById('aiForm');
+        const btnProses = document.getElementById('btnProses');
+        const loading = document.getElementById('loading');
+        const resultArea = document.getElementById('resultArea');
+        let currentHistoryId = null;
 
-fotoIn.addEventListener("change", () => { mediaIn.value = ""; updateLabel(fotoIn); });
-mediaIn.addEventListener("change", () => { fotoIn.addEventListener = ""; updateLabel(mediaIn); });
+        aiForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('foto', document.getElementById('foto').files[0]);
+            formData.append('jenis', document.getElementById('jenis').value);
+            formData.append('jumlah', document.getElementById('jumlah').value);
 
-document.getElementById("aiForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  document.getElementById("soal").value = "Sedang merangkum & membuat soal... ⏳";
-  document.getElementById("jawaban").value = "";
+            // UI State
+            loading.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            btnProses.disabled = true;
+            btnProses.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> Memproses...';
 
-  try {
-    const res = await fetch("/ai/process", { method:"POST", body: formData });
-    const data = await res.json();
-    if(data.success){
-      document.getElementById("soal").value = data.soal;
-      document.getElementById("jawaban").value = data.jawaban;
-      currentHistoryId = data.historyId;
-    } else { alert("Gagal memproses AI"); }
-  } catch(err){ alert("Error koneksi"); }
-});
+            try {
+                const response = await fetch('/ai/process', {
+                    method: 'POST',
+                    body: formData
+                });
 
-document.getElementById("exportWordBtn").addEventListener("click", async () => {
-  if(!currentHistoryId) return alert("Proses AI dulu!");
-  const res = await fetch("/export/" + currentHistoryId);
-  const data = await res.json();
-  if(data.wordFile) window.location.href = data.wordFile;
-});
-</script>
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentHistoryId = data.historyId; // Simpan ID untuk export
+                    document.getElementById('soalContent').textContent = data.soal;
+                    document.getElementById('jawabanContent').textContent = data.jawaban;
+                    resultArea.classList.remove('hidden');
+                } else {
+                    alert('Gagal: ' + data.error);
+                }
+            } catch (err) {
+                alert('Koneksi bermasalah, coba lagi.');
+            } finally {
+                loading.classList.add('hidden');
+                btnProses.disabled = false;
+                btnProses.innerHTML = '<i class="fas fa-rocket"></i> Proses Sekarang';
+            }
+        };
+
+        // Logika Tombol Export
+        document.getElementById('btnExport').onclick = () => {
+            if (currentHistoryId) {
+                window.location.href = `/export/word/${currentHistoryId}`;
+            } else {
+                alert('Silakan buat soal terlebih dahulu!');
+            }
+        };
+
+        function copyAll() {
+            const soal = document.getElementById('soalContent').innerText;
+            const jawaban = document.getElementById('jawabanContent').innerText;
+            navigator.clipboard.writeText(soal + "\n\n=== JAWABAN ===\n\n" + jawaban);
+            alert('Semua soal dan jawaban berhasil disalin!');
+        }
+    </script>
 </body>
 </html>
