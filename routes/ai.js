@@ -18,14 +18,12 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
 
-    // 1. Konversi gambar ke Base64
     const imagePath = req.files[0].path;
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
 
     const prompt = `Rangkum materi dari gambar ini dan buatkan ${req.body.jumlah} soal ${req.body.jenis}. 
-    PENTING: Pisahkan soal dan jawaban HANYA dengan kata kunci ===JAWABAN===. Jangan berikan teks pembuka, langsung ke konten.`;
+    PENTING: Pisahkan soal dan jawaban HANYA dengan kata kunci ===JAWABAN===.`;
 
-    // 2. Gunakan model Llama 3.2 Vision terbaru
     const completion = await groq.chat.completions.create({
       messages: [
         {
@@ -34,15 +32,13 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
             { type: "text", text: prompt },
             {
               type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-              },
+              image_url: { url: `data:image/jpeg;base64,${base64Image}` },
             },
           ],
         },
       ],
-      model: "llama-3.2-11b-vision-preview", // Model terbaru pengganti Llava
-      temperature: 0.5,
+      model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+      temperature: 0.6,
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
@@ -50,16 +46,12 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     const teksSoal = parts[0].trim();
     const teksJawaban = parts[1] ? parts[1].trim() : "";
 
-    // 3. Simpan ke Database
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
       [req.session.user.id, teksSoal, teksJawaban],
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
-
-        // Hapus file sementara
         if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-
         res.json({
           success: true,
           hasil: fullContent,
@@ -71,7 +63,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     );
   } catch (err) {
     console.error("GROQ ERROR:", err);
-    res.status(500).json({ error: "Gagal memproses AI. Pastikan API Key benar dan model tersedia." });
+    res.status(500).json({ error: "Gagal memproses AI." });
   }
 });
 
