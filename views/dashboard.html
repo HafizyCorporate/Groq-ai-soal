@@ -9,9 +9,31 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
+        .modal-active { overflow: hidden; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
+
+    <div id="limitModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center transform scale-95 transition-transform duration-300">
+            <div class="w-20 h-20 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-crown text-4xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">Jatah Harian Habis!</h3>
+            <p class="text-gray-600 mb-6 leading-relaxed">
+                Bilamana ingin menggunakan lebih banyak harap hubungi admin. <br>
+                <span class="font-bold text-blue-600 italic text-lg">Hanya Rp 5.000 / Bulan</span>
+            </p>
+            <div class="space-y-3">
+                <a href="https://wa.me/6282240400388" target="_blank" class="block w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+                    <i class="fab fa-whatsapp text-xl"></i> Hubungi Admin
+                </a>
+                <button onclick="closeLimitModal()" class="block w-full bg-gray-100 text-gray-500 font-semibold py-3 rounded-xl hover:bg-gray-200 transition">
+                    Nanti Saja
+                </button>
+            </div>
+        </div>
+    </div>
 
     <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-2">
@@ -19,7 +41,6 @@
             <h1 class="text-xl font-bold text-gray-800 tracking-tight">AutoSoal <span class="text-blue-600">AI</span></h1>
         </div>
         <div class="flex items-center gap-4">
-            <span class="hidden md:inline text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">Akun Premium</span>
             <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">
                 <i class="fas fa-sign-out-alt mr-1"></i> Logout
             </a>
@@ -91,7 +112,18 @@
         const btnProses = document.getElementById('btnProses');
         const loading = document.getElementById('loading');
         const resultArea = document.getElementById('resultArea');
+        const limitModal = document.getElementById('limitModal');
         let currentHistoryId = null;
+
+        function showLimitModal() {
+            limitModal.classList.remove('hidden');
+            document.body.classList.add('modal-active');
+        }
+
+        function closeLimitModal() {
+            limitModal.classList.add('hidden');
+            document.body.classList.remove('modal-active');
+        }
 
         aiForm.onsubmit = async (e) => {
             e.preventDefault();
@@ -116,7 +148,6 @@
             btnProses.innerHTML = '<i class="fas fa-circle-notch animate-spin"></i> Memproses...';
 
             try {
-                // Endpoint tetap menggunakan /ai/process sesuai routes/ai.js
                 const response = await fetch('/ai/process', { method: 'POST', body: formData });
                 const data = await response.json();
                 
@@ -125,12 +156,14 @@
                     document.getElementById('soalContent').textContent = data.soal;
                     document.getElementById('jawabanContent').textContent = data.jawaban;
                     resultArea.classList.remove('hidden');
-                } else { 
-                    // Perbaikan: Menampilkan pesan error dari server (seperti limit 1x)
-                    alert(data.error || 'Terjadi kesalahan pada AI'); 
+                } else if (response.status === 403) {
+                    // Tampilkan Pop-up jika kena limit
+                    showLimitModal();
+                } else {
+                    alert('Gagal: ' + data.error);
                 }
             } catch (err) { 
-                alert('Koneksi bermasalah atau server mati.'); 
+                alert('Koneksi bermasalah.'); 
             }
             finally {
                 loading.classList.add('hidden');
@@ -147,9 +180,8 @@
         function copyAll() {
             const soal = document.getElementById('soalContent').innerText;
             const jawaban = document.getElementById('jawabanContent').innerText;
-            if(!soal) return alert('Tidak ada teks untuk disalin');
             navigator.clipboard.writeText(soal + "\n\n=== JAWABAN ===\n\n" + jawaban);
-            alert('Berhasil disalin ke clipboard!');
+            alert('Berhasil disalin!');
         }
     </script>
 </body>
