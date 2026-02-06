@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-// Menambahkan PageBreak ke dalam import
-const { Document, Packer, Paragraph, TextRun, AlignmentType, Break, PageBreak } = require("docx");
+// Kita hanya panggil komponen inti yang pasti ada di semua versi
+const { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } = require("docx");
 
 router.get("/word/:id", (req, res) => {
     const historyId = req.params.id;
@@ -25,22 +25,29 @@ router.get("/word/:id", (req, res) => {
                             alignment: AlignmentType.CENTER,
                             children: [
                                 new TextRun({ text: "INSTANSI PENDIDIKAN AUTO SOAL AI", bold: true, size: 28 }),
-                                new Break(),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
                                 new TextRun({ text: "UJIAN BERBASIS KECERDASAN BUATAN", bold: true, size: 22 }),
                             ],
                         }),
-                        new Paragraph({ text: "__________________________________________________________", alignment: AlignmentType.CENTER }),
-                        new Paragraph({ text: "", spacing: { after: 200 } }),
+                        new Paragraph({ 
+                            alignment: AlignmentType.CENTER, 
+                            text: "__________________________________________________________" 
+                        }),
+                        new Paragraph({ text: "" }), // Spasi kosong
 
                         // --- ISI SOAL ---
                         ...soalLines.map(line => new Paragraph({
                             children: [ new TextRun({ text: line, size: 24 }) ],
                             spacing: { after: 120 },
-                            keepNext: true,
+                            keepNext: true, // Mencegah soal terpotong
                             keepLines: true
                         })),
 
-                        // --- HALAMAN BARU (FIXED) ---
+                        // --- HALAMAN BARU ---
                         new Paragraph({ children: [new PageBreak()] }), 
 
                         // --- KUNCI JAWABAN ---
