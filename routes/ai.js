@@ -17,34 +17,32 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
-    if (req.files.length > 5) return res.status(400).json({ error: "Maksimal 5 gambar saja" });
+    
+    const jumlahDiminta = req.body.jumlah || 5;
 
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis materi dari gambar yang diberikan. Buat ${req.body.jumlah} soal ${req.body.jenis}.
-        
-        KOMPOSISI SOAL:
-        - 80% soal teks, 20% soal visual (contoh: "Gambar apakah ini?").
+        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${req.body.jenis}. 
+        PENTING: Anda harus menyelesaikan semua nomor sampai nomor ${jumlahDiminta}. Jangan berhenti di tengah jalan.
 
-        ATURAN LINK GAMBAR (GOOGLE SEARCH):
-        1. JANGAN gunakan Unsplash atau Picsum jika tidak suka.
-        2. Gunakan format link pencarian langsung agar siswa bisa klik dan lihat hasilnya:
-           https://www.google.com/search?q=[keyword]&tbm=isch
-        3. Ganti [keyword] dengan subjek soal. Contoh jika soal monyet:
-           https://www.google.com/search?q=gambar+monyet+lucu&tbm=isch
-        
-        ATURAN FORMAT:
-        1. JANGAN tulis label "Soal PG:". Langsung nomor: "1) [Pertanyaan]".
-        2. Berikan jarak 2 baris antar soal.
-        
-        ATURAN REFERENSI GAMBAR:
-        1. Taruh link di halaman terakhir setelah Kunci Jawaban.
-        2. WAJIB tuliskan nomor soalnya. Contoh: "Soal No 1: [Link Google]".
-        3. Gunakan judul "--- DOWNLOAD REFERENSI GAMBAR ---".
+        KOMPOSISI: 80% teks, 20% visual (soal gambar).
 
-        Aturan Jawaban:
-        1. HANYA 1 jawaban benar. Pisahkan dengan ===JAWABAN===.`
+        ATURAN PENULISAN SOAL:
+        1. Gunakan format nomor langsung: "1) [Pertanyaan]". JANGAN pakai label "Soal PG:".
+        2. Berikan jarak 2 baris kosong antar nomor soal agar rapi.
+        3. Link Google Image harus spesifik: https://www.google.com/search?q=[keyword]&tbm=isch (Ganti keyword sesuai subjek soal).
+        
+        STRUKTUR OUTPUT (WAJIB PATUH):
+        [Tulis semua daftar soal di sini sampai nomor terakhir]
+        
+        ###BATAS_AKHIR_SOAL###
+
+        --- KUNCI JAWABAN ---
+        [Tulis semua kunci jawaban di sini]
+
+        --- DOWNLOAD REFERENSI GAMBAR ---
+        [Tulis link Google Image di sini, sertakan nomor soalnya: "Soal No X: [Link]"]`
       }
     ];
 
@@ -59,13 +57,15 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const completion = await groq.chat.completions.create({
       messages: [{ role: "user", content: contentPayload }],
       model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.7,
+      temperature: 0.5, // Suhu rendah agar AI sangat patuh pada format
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
-    const parts = fullContent.split("===JAWABAN===");
+    
+    // Memisahkan soal dan jawaban berdasarkan pembatas unik
+    const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
     const teksSoal = parts[0].trim();
-    const teksJawaban = parts[1] ? parts[1].trim() : "";
+    const teksJawaban = parts[1] ? parts[1].trim() : "Gagal memisahkan jawaban.";
 
     db.run(
       "INSERT INTO history (user_id, soal, jawaban) VALUES (?,?,?)",
@@ -74,7 +74,10 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         if (err) return res.status(500).json({ error: "Gagal simpan ke DB" });
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
         res.json({
-          success: true, soal: teksSoal, jawaban: teksJawaban, historyId: this.lastID,
+          success: true,
+          soal: teksSoal,
+          jawaban: teksJawaban,
+          historyId: this.lastID,
         });
       }
     );
