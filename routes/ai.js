@@ -3,12 +3,9 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const db = require("../db");
-// Menggunakan SDK Resmi Groq
 const Groq = require("groq-sdk");
 
 const router = express.Router();
-
-// Pastikan GROQ_API_KEY sudah diisi di Environment Variables Railway
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const uploadDir = path.join(__dirname, "../uploads/");
@@ -21,15 +18,14 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
     if (!req.session.user) return res.status(401).json({ error: "Login dulu" });
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: "Foto wajib ada" });
 
-    // 1. Konversi gambar ke Base64 agar bisa dibaca AI Vision
+    // 1. Konversi gambar ke Base64
     const imagePath = req.files[0].path;
     const base64Image = fs.readFileSync(imagePath, { encoding: 'base64' });
 
     const prompt = `Rangkum materi dari gambar ini dan buatkan ${req.body.jumlah} soal ${req.body.jenis}.
-    PENTING: Pisahkan soal dan jawaban HANYA dengan kata kunci ===JAWABAN===. Jangan tulis ===SOAL=== di awal.`;
+    PENTING: Pisahkan soal dan jawaban HANYA dengan kata kunci ===JAWABAN===.`;
 
-    // 2. Jalankan Chat Completion menggunakan Groq SDK
-    // Kita gunakan model Vision terbaru yang aktif: llama-3.2-11b-vision-preview
+    // 2. Request menggunakan model Vision Llava yang stabil
     const completion = await groq.chat.completions.create({
       messages: [
         {
@@ -38,15 +34,12 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
             { type: "text", text: prompt },
             {
               type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-              },
+              image_url: { url: `data:image/jpeg;base64,${base64Image}` },
             },
           ],
         },
       ],
-      model: "llama-3.2-11b-vision-preview", 
-      temperature: 0.7,
+      model: "llava-v1.5-7b-4096-preview", 
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
@@ -61,7 +54,7 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
       function (err) {
         if (err) return res.status(500).json({ error: "Gagal simpan DB" });
 
-        // Hapus file sementara agar storage Railway tidak penuh
+        // Hapus file sementara agar Railway tidak penuh
         req.files.forEach((f) => {
           if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
         });
@@ -76,8 +69,8 @@ router.post("/process", upload.array("foto", 10), async (req, res) => {
       }
     );
   } catch (err) {
-    console.error("GROQ SDK ERROR:", err);
-    res.status(500).json({ error: "Gagal memproses AI. Cek model vision di Groq Cloud." });
+    console.error("AI ERROR:", err);
+    res.status(500).json({ error: "Gagal memproses AI. Model vision sedang diupdate." });
   }
 });
 
