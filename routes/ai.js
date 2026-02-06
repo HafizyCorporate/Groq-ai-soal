@@ -45,22 +45,24 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const contentPayload = [
       { 
         type: "text", 
-        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${req.body.jenis}. 
-        PENTING: Anda harus menyelesaikan semua nomor sampai nomor ${jumlahDiminta}. Jangan berhenti di tengah jalan.
+        text: `Tugas: Analisis materi dari gambar. Buat TEPAT ${jumlahDiminta} soal ${req.body.jenis}.
 
-        KOMPOSISI: 80% teks, 20% visual (soal gambar).
+        STRUKTUR OUTPUT WAJIB:
+        1. Tulis daftar soal terlebih dahulu.
+        2. Gunakan pemisah ###BATAS_AKHIR_SOAL### tepat setelah soal terakhir.
+        3. Tulis Kunci Jawaban dan Link Referensi Gambar di bawah pemisah tersebut.
 
-        ATURAN PENULISAN SOAL:
-        1. Gunakan format nomor langsung: "1) [Pertanyaan]".
-        2. Link Google Image harus spesifik: https://www.google.com/search?q=[keyword]&tbm=isch
-        
+        ATURAN PENULISAN:
+        - Soal: "1) [Pertanyaan]"
+        - Link Google Image: "https://www.google.com/search?q=[keyword]&tbm=isch"
+
+        CONTOH FORMAT AKHIR:
+        [Daftar Soal...]
         ###BATAS_AKHIR_SOAL###
-
         --- KUNCI JAWABAN ---
-        [Tulis semua kunci jawaban di sini]
-
+        [Isi Jawaban...]
         --- DOWNLOAD REFERENSI GAMBAR ---
-        [Tulis link Google Image di sini, sertakan nomor soalnya]`
+        [Isi Link...]`
       }
     ];
 
@@ -79,9 +81,21 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     });
 
     const fullContent = completion.choices[0]?.message?.content || "";
-    const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
-    const teksSoal = parts[0].trim();
-    const teksJawaban = parts[1] ? parts[1].trim() : "Gagal memisahkan jawaban.";
+    
+    // Logika Pemisahan yang Disempurnakan
+    let teksSoal = "";
+    let teksJawaban = "";
+
+    if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
+        const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
+        teksSoal = parts[0].trim();
+        teksJawaban = parts[1].trim();
+    } else {
+        // Fallback jika AI tidak menyertakan tanda pagar
+        const fallbackParts = fullContent.split(/--- KUNCI JAWABAN ---|Kunci Jawaban:/i);
+        teksSoal = fallbackParts[0].trim();
+        teksJawaban = fallbackParts[1] ? "--- KUNCI JAWABAN --- " + fallbackParts[1].trim() : "Gagal memisahkan jawaban secara otomatis.";
+    }
 
     db.run(
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
@@ -92,7 +106,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         res.json({
           success: true,
           soal: teksSoal,
-          jawaban: teksJawaban,
+          jawaban: teksJawaban, // Data ini yang akan tampil di kolom hitam
           historyId: this.lastID,
         });
       }
