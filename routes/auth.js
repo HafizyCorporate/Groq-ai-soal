@@ -1,17 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
+const path = require("path"); // Ditambahkan untuk menghandle path file html
 
 router.post("/login", (req, res) => {
-    const { email, password } = req.body; // email menampung input dari form login
+    const { email, password } = req.body; 
     
-    // Login tetap mendukung pengecekan email atau username untuk fleksibilitas
     db.get("SELECT * FROM users WHERE (email = ? OR username = ?) AND password = ?", 
     [email, email, password], (err, user) => {
         if (err) return res.status(500).json({ error: "Database Error" });
         if (!user) return res.status(401).json({ error: "Akun tidak ditemukan atau password salah" });
         
-        // Simpan data user ke session
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -24,17 +23,12 @@ router.post("/login", (req, res) => {
 
 router.post("/register", (req, res) => {
     const { email, password } = req.body;
-
-    // OTOMATIS: Ambil bagian depan email sebagai username 
-    // Contoh: azhardax94@gmail.com -> username: azhardax94
     const username = email.split('@')[0];
 
-    // Cek apakah email sudah terdaftar sebelumnya agar tidak duplikat
     db.get("SELECT email FROM users WHERE email = ?", [email], (err, row) => {
         if (err) return res.status(500).json({ error: "Database Error" });
         if (row) return res.status(400).json({ error: "Email sudah terdaftar" });
 
-        // Masukkan ke database dengan role default 'user'
         db.run("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'user')", 
         [username, email, password], (err) => {
             if (err) {
@@ -43,6 +37,44 @@ router.post("/register", (req, res) => {
             }
             res.json({ success: true });
         });
+    });
+});
+
+// --- TAMBAHAN RUTE /ME UNTUK INFO TOKEN ---
+router.get("/me", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ success: false, error: "Belum login" });
+    }
+    const userId = req.session.user.id;
+    db.get("SELECT id, username, role, tokens FROM users WHERE id = ?", [userId], (err, user) => {
+        if (err || !user) return res.status(500).json({ success: false });
+        res.json({ success: true, user });
+    });
+});
+
+// --- TAMBAHAN RUTE HALAMAN ADMIN ---
+router.get("/admin_page", (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+        return res.status(403).send("Akses dilarang! Area ini khusus Admin.");
+    }
+    res.sendFile(path.join(__dirname, "../views/admin.html"));
+});
+
+// --- TAMBAHAN RUTE API ADMIN (AMBIL & UPDATE USER) ---
+router.get("/admin/users", (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'admin') return res.status(403).json({ success: false });
+    db.all("SELECT id, username, email, tokens, role FROM users ORDER BY id DESC", [], (err, rows) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true, users: rows });
+    });
+});
+
+router.post("/admin/update-token", (req, res) => {
+    if (!req.session.user || req.session.user.role !== 'admin') return res.status(403).json({ success: false });
+    const { userId, newToken } = req.body;
+    db.run("UPDATE users SET tokens = ? WHERE id = ?", [newToken, userId], (err) => {
+        if (err) return res.status(500).json({ success: false });
+        res.json({ success: true });
     });
 });
 
