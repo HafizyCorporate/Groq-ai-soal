@@ -3,173 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - AutoSoal AI</title>
+    <title>Dashboard - SOAL AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .modal-active { overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f8faff; 
+            color: #1a1a1a;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col">
+<body class="min-h-screen">
 
-    <div id="limitModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center">
-            <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-crown text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-800">Limit Harian Habis!</h3>
-            <p class="text-sm text-gray-500 mb-6">Buka akses sepuasnya hanya <br> <span class="text-blue-600 font-bold">Rp 5.000 / Bulan</span></p>
-            
-            <div class="bg-gray-100 p-4 rounded-2xl mb-6 border-2 border-dashed border-gray-300">
-                <img src="/images/qris.jpg" alt="Scan QRIS" class="mx-auto rounded-lg shadow-md w-40 h-40 object-contain bg-white">
-                <p class="text-[10px] text-gray-400 mt-2 italic text-center">Scan QRIS & Bayar Rp 5.000</p>
-            </div>
-
-            <div class="space-y-3">
-                <button onclick="kirimKonfirmasiWA()" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition flex items-center justify-center gap-2">
-                    <i class="fab fa-whatsapp text-xl"></i> Konfirmasi ke WA
-                </button>
-                <button onclick="closeLimitModal()" class="w-full text-gray-400 text-sm font-medium">Nanti Saja</button>
-            </div>
-        </div>
-    </div>
-
-    <nav class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center gap-2">
-            <div class="bg-blue-600 p-2 rounded-lg"><i class="fas fa-robot text-white"></i></div>
-            <h1 class="text-xl font-bold text-gray-800 tracking-tight">AutoSoal <span class="text-blue-600">AI</span></h1>
-        </div>
-        <div class="flex items-center gap-4">
-            <span id="usernameDisplay" class="text-gray-800 font-bold hidden md:block">User</span>
-            <a href="/auth/logout" class="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-bold transition">Logout</a>
+    <nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+        <h1 class="text-3xl font-[900] italic tracking-tighter">
+            SOAL <span class="text-blue-600">AI</span>
+        </h1>
+        <div class="flex items-center gap-6">
+            <span class="text-sm font-bold text-gray-500 hidden md:block uppercase tracking-widest">Panel Dashboard</span>
+            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
+                Logout
+            </button>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-6 flex-grow w-full">
-        <div class="bg-white rounded-2xl shadow-sm border p-6 mb-8">
-            <h2 class="text-lg font-bold mb-4 text-gray-800 flex items-center">
-                <i class="fas fa-magic text-blue-500 mr-2"></i> Buat Soal Otomatis
-            </h2>
-            <form id="aiForm" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-700">Upload Materi (Maks 5 Gambar)</label>
-                        <input type="file" id="foto" accept="image/*" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-semibold text-gray-700">Jenis</label>
-                            <select id="jenis" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="PG">Pilihan Ganda</option>
-                                <option value="Essay">Essay</option>
-                            </select>
+    <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-12">
+            <h2 class="text-4xl font-black tracking-tight mb-2">Selamat Datang! 👋</h2>
+            <p class="text-gray-500 font-medium">Buat soal ujian otomatis dengan kecerdasan buatan Gemini AI.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="glass-card p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
+                    <h3 class="text-blue-600 font-black text-xs uppercase tracking-[0.2em] mb-6">Konfigurasi Soal</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[11px] font-black uppercase text-gray-400 ml-2 mb-2 block">Mata Pelajaran</label>
+                            <input type="text" id="subject" placeholder="Contoh: Matematika" 
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-semibold focus:ring-2 focus:ring-blue-400 transition-all">
                         </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-semibold text-gray-700">Jumlah</label>
-                            <input type="number" id="jumlah" value="5" min="1" max="20" class="w-full p-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                        <div>
+                            <label class="text-[11px] font-black uppercase text-gray-400 ml-2 mb-2 block">Jumlah Soal</label>
+                            <input type="number" id="count" placeholder="Maksimal 10" 
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-semibold focus:ring-2 focus:ring-blue-400 transition-all">
                         </div>
+                        <button onclick="generateSoal()" id="btnGenerate"
+                            class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95 uppercase text-sm tracking-widest mt-4">
+                            Generate Soal
+                        </button>
                     </div>
                 </div>
-                <button type="submit" id="btnProses" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2">
-                    <i class="fas fa-rocket"></i> Proses Sekarang
-                </button>
-            </form>
-        </div>
-
-        <div id="loading" class="hidden text-center py-12">
-            <div class="animate-spin inline-block w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-            <p class="text-gray-500 italic">AI sedang menyusun soal...</p>
-        </div>
-
-        <div id="resultArea" class="hidden space-y-6">
-            <div class="flex gap-3">
-                <button id="btnExport" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2"><i class="fas fa-file-word"></i> Download Word</button>
-                <button onclick="copyAll()" class="bg-gray-800 text-white px-6 rounded-xl hover:bg-black transition"><i class="far fa-copy"></i></button>
             </div>
-            <div class="bg-white rounded-2xl shadow-sm border p-8">
-                <pre id="soalContent" class="text-gray-700 whitespace-pre-wrap"></pre>
-            </div>
-            <div class="bg-slate-900 rounded-2xl shadow-xl p-8 text-white">
-                <pre id="jawabanContent" class="opacity-90 whitespace-pre-wrap"></pre>
+
+            <div class="lg:col-span-2">
+                <div id="resultArea" class="glass-card min-h-[500px] p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative">
+                    <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
+                        <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </div>
+                        <h4 class="text-xl font-bold mb-1">Hasil Belum Tersedia</h4>
+                        <p class="text-gray-400 text-sm">Isi konfigurasi di samping dan klik Generate untuk melihat soal.</p>
+                    </div>
+                    
+                    <div id="outputContent" class="hidden space-y-6">
+                        </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <footer class="py-8 text-center">
-        <p class="text-gray-400 text-xs font-medium tracking-widest uppercase">
-            Made by : <span class="text-gray-600 font-bold">Te Az Ha</span>
-        </p>
-    </footer>
-
     <script>
-        const aiForm = document.getElementById('aiForm');
-        const btnProses = document.getElementById('btnProses');
-        const loading = document.getElementById('loading');
-        const resultArea = document.getElementById('resultArea');
-        const limitModal = document.getElementById('limitModal');
-        let currentHistoryId = null;
-
-        function showLimitModal() {
-            limitModal.classList.remove('hidden');
-            document.body.classList.add('modal-active');
+        // Notifikasi Logout Keren
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Ingin Keluar?',
+                text: "Sesi Anda akan diakhiri.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#0d1117',
+                cancelButtonColor: '#f3f4f6',
+                confirmButtonText: 'YA, KELUAR',
+                cancelButtonText: '<span style="color: #9ca3af">BATAL</span>',
+                borderRadius: '30px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/auth/logout';
+                }
+            })
         }
 
-        function closeLimitModal() {
-            limitModal.classList.add('hidden');
-            document.body.classList.remove('modal-active');
-        }
+        async function generateSoal() {
+            const subject = document.getElementById('subject').value;
+            const count = document.getElementById('count').value;
+            const btn = document.getElementById('btnGenerate');
 
-        function kirimKonfirmasiWA() {
-            const user = "USER_KAMU"; // Ini bisa dinamis dari backend
-            const pesan = `Halo Te Az Ha! 👋%0ASaya sudah bayar Premium Rp 5.000.%0AUsername: ${user}%0AMohon diaktifkan.`;
-            window.open(`https://wa.me/6282240400388?text=${pesan}`, '_blank');
-        }
-
-        aiForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            const fileInput = document.getElementById('foto');
-            for (let i = 0; i < fileInput.files.length; i++) {
-                formData.append('foto', fileInput.files[i]);
+            if(!subject || !count) {
+                return Swal.fire({ icon: 'error', title: 'Data Kurang', text: 'Mohon isi subjek dan jumlah soal.', borderRadius: '30px' });
             }
-            formData.append('jenis', document.getElementById('jenis').value);
-            formData.append('jumlah', document.getElementById('jumlah').value);
 
-            loading.classList.remove('hidden');
-            resultArea.classList.add('hidden');
-            btnProses.disabled = true;
+            // Notifikasi Loading Modern
+            Swal.fire({
+                title: 'Sedang Memproses',
+                html: 'Gemini AI sedang menyusun soal untukmu...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
 
             try {
-                const response = await fetch('/ai/process', { method: 'POST', body: formData });
+                const response = await fetch('/ai/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject, count })
+                });
                 const data = await response.json();
-                
-                if (data.success) {
-                    currentHistoryId = data.historyId;
-                    document.getElementById('soalContent').textContent = data.soal;
-                    document.getElementById('jawabanContent').textContent = data.jawaban;
-                    resultArea.classList.remove('hidden');
-                } else if (response.status === 403) {
-                    showLimitModal();
-                } else {
-                    alert('Gagal: ' + data.error);
+
+                if(data.success) {
+                    Swal.close();
+                    document.getElementById('placeholder').classList.add('hidden');
+                    const output = document.getElementById('outputContent');
+                    output.classList.remove('hidden');
+                    output.innerHTML = `<div class="prose max-w-none font-medium text-gray-700">${data.result}</div>`;
+                    
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Soal berhasil dibuat.', timer: 2000, showConfirmButton: false });
                 }
-            } catch (err) { alert('Koneksi bermasalah.'); }
-            finally {
-                loading.classList.add('hidden');
-                btnProses.disabled = false;
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Gangguan Sistem', text: 'Gagal terhubung ke AI.' });
             }
-        };
-
-        document.getElementById('btnExport').onclick = () => {
-            if (currentHistoryId) window.location.href = `/export/word/${currentHistoryId}`;
-        };
-
-        function copyAll() {
-            const txt = document.getElementById('soalContent').innerText + "\n\n" + document.getElementById('jawabanContent').innerText;
-            navigator.clipboard.writeText(txt);
-            alert('Teks disalin!');
         }
     </script>
 </body>
