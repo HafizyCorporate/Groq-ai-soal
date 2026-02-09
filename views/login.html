@@ -20,57 +20,29 @@
     </div>
 
     <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[380px] p-10">
-        
-        <h2 class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">
-            Masuk Ke Akun
-        </h2>
-        
+        <h2 class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">Masuk Ke Akun</h2>
         <form id="loginForm" class="space-y-4">
-            <div>
-                <input type="text" id="email" placeholder="Username atau Email" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
-            </div>
-            
-            <div>
-                <input type="password" id="password" placeholder="Password" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
-            </div>
-            
-            <button type="submit" id="btnLogin" 
-                class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-base tracking-widest">
-                Masuk Sekarang
-            </button>
+            <input type="text" id="email" placeholder="Username atau Email" class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
+            <input type="password" id="password" placeholder="Password" class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
+            <button type="submit" id="btnLogin" class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-base tracking-widest">Masuk Sekarang</button>
         </form>
-        
         <div class="flex justify-between mt-8 px-2 text-[12px]">
-            <div class="text-gray-400 font-bold">
-                Lupa? <a href="/forget" class="text-blue-600 hover:underline">Klik Disini</a>
-            </div>
-            <a href="/register" class="text-blue-600 font-black hover:underline transition uppercase tracking-wider">
-                Daftar Akun
-            </a>
+            <div class="text-gray-400 font-bold">Lupa? <a href="/forget" class="text-blue-600 hover:underline">Klik Disini</a></div>
+            <a href="/register" class="text-blue-600 font-black hover:underline transition uppercase tracking-wider">Daftar Akun</a>
         </div>
     </div>
-
-    <footer class="mt-20">
-        <p class="text-gray-300 text-[11px] tracking-[0.4em] font-black uppercase text-center">
-            Made by : <span class="text-gray-400">Te Az Ha</span>
-        </p>
-    </footer>
 
     <script>
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
             btn.innerHTML = '⏳ TUNGGU...';
             btn.disabled = true;
             try {
                 const response = await fetch('/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value })
                 });
                 const data = await response.json();
                 if (data.success) { window.location.href = '/dashboard'; } 
