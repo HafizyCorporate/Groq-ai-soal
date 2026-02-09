@@ -6,7 +6,7 @@
     <title>Pemulihan Akun - SOAL AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
         .hidden { display: none; }
     </style>
@@ -14,41 +14,41 @@
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
     <div class="mb-10 text-center">
-        <h1 class="text-5xl font-black italic tracking-tighter text-[#1a1a1a]">
+        <h1 class="text-6xl font-[900] italic tracking-tighter text-[#1a1a1a]">
             SOAL <span class="text-blue-600">AI</span>
         </h1>
-        <p class="text-gray-400 text-[10px] mt-2 tracking-[0.2em] font-bold uppercase">Sistem Pembuat Soal Otomatis</p>
+        <p class="text-gray-400 text-[11px] mt-2 tracking-[0.3em] font-bold uppercase">Sistem Pembuat Soal Otomatis</p>
     </div>
 
     <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[380px] p-10">
         
-        <h2 id="formTitle" class="text-center text-blue-600 font-bold tracking-widest text-[11px] mb-8 uppercase">
+        <h2 id="formTitle" class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">
             Pemulihan Akun
         </h2>
 
         <form id="stepEmail" class="space-y-6">
             <input type="email" id="resetEmail" placeholder="Masukkan Email Anda" 
-                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-medium" required>
+                class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 outline-none font-semibold text-lg" required>
             <button type="submit" id="btnSendOtp" 
-                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl hover:bg-black transition-all shadow-lg uppercase text-xs tracking-widest">
+                class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl hover:bg-black transition-all shadow-lg uppercase text-sm tracking-widest">
                 Kirim Kode OTP
             </button>
         </form>
 
-        <form id="stepReset" class="space-y-4 hidden">
-            <p class="text-[10px] text-gray-500 text-center mb-4">Masukkan kode 6 digit yang dikirim ke email kamu</p>
-            <input type="text" id="otpCode" placeholder="Kode OTP (6 Digit)" 
-                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-medium text-center tracking-[10px]" maxlength="6" required>
+        <form id="stepReset" class="space-y-5 hidden text-center">
+            <p class="text-[12px] text-gray-500 font-bold mb-4">MASUKKAN KODE 6 DIGIT</p>
+            <input type="text" id="otpCode" placeholder="000000" 
+                class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 outline-none font-black text-2xl text-center tracking-[15px]" maxlength="6" required>
             <input type="password" id="newPassword" placeholder="Password Baru" 
-                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-medium" required>
+                class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 outline-none font-semibold text-lg" required>
             <button type="submit" id="btnUpdatePass" 
-                class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 transition-all shadow-lg uppercase text-xs tracking-widest">
+                class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl hover:bg-blue-700 transition-all shadow-lg uppercase text-sm tracking-widest">
                 Update Password
             </button>
         </form>
 
-        <div class="mt-8 text-center">
-            <a href="/" class="text-[11px] text-blue-600 font-bold hover:underline">Kembali Login</a>
+        <div class="mt-10 text-center">
+            <a href="/" class="text-[12px] text-blue-600 font-black hover:underline uppercase tracking-wider">Kembali Login</a>
         </div>
     </div>
 
@@ -58,15 +58,12 @@
         const formTitle = document.getElementById('formTitle');
         let userEmail = "";
 
-        // Kirim OTP
         stepEmail.onsubmit = async (e) => {
             e.preventDefault();
             userEmail = document.getElementById('resetEmail').value;
             const btn = document.getElementById('btnSendOtp');
-
             btn.innerHTML = '⏳ MENGIRIM...';
             btn.disabled = true;
-
             try {
                 const response = await fetch('/auth/forgot-password', {
                     method: 'POST',
@@ -74,30 +71,22 @@
                     body: JSON.stringify({ email: userEmail })
                 });
                 const data = await response.json();
-                
                 if (data.success) {
                     alert('Kode OTP telah dikirim!');
                     stepEmail.classList.add('hidden');
                     stepReset.classList.remove('hidden');
-                    formTitle.innerText = "Verifikasi & Reset";
-                } else {
-                    alert('Gagal: ' + data.error);
-                    btn.innerText = 'Kirim Kode OTP';
-                    btn.disabled = false;
-                }
+                    formTitle.innerText = "Verifikasi OTP";
+                } else { alert('Gagal: ' + data.error); btn.innerText = 'Kirim Kode OTP'; btn.disabled = false; }
             } catch (err) { alert('Kesalahan koneksi'); btn.disabled = false; }
         };
 
-        // Update Password
         stepReset.onsubmit = async (e) => {
             e.preventDefault();
             const otp = document.getElementById('otpCode').value;
             const newPassword = document.getElementById('newPassword').value;
             const btn = document.getElementById('btnUpdatePass');
-
-            btn.innerHTML = '⏳ MEMPROSES...';
+            btn.innerHTML = '⏳ UPDATE...';
             btn.disabled = true;
-
             try {
                 const response = await fetch('/auth/reset-password', {
                     method: 'POST',
@@ -105,15 +94,8 @@
                     body: JSON.stringify({ email: userEmail, otp, newPassword })
                 });
                 const data = await response.json();
-                
-                if (data.success) {
-                    alert('Password berhasil dirubah! Silakan login kembali.');
-                    window.location.href = '/';
-                } else {
-                    alert('Gagal: ' + data.error);
-                    btn.innerText = 'Update Password';
-                    btn.disabled = false;
-                }
+                if (data.success) { alert('Password Berhasil!'); window.location.href = '/'; } 
+                else { alert('Gagal: ' + data.error); btn.innerText = 'Update Password'; btn.disabled = false; }
             } catch (err) { alert('Kesalahan koneksi'); btn.disabled = false; }
         };
     </script>
