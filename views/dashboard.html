@@ -75,6 +75,11 @@
             SOAL <span class="text-blue-600">AI</span>
         </h1>
         <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-lg">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 11V5a1 1 0 112 0v6a1 1 0 11-2 0zM11 14a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
+                <span class="text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
+            </div>
+            
             <span class="text-[12px] font-bold text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Panel Dasbor Pengajar</span>
             <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
                 Riwayat Soal
@@ -174,11 +179,26 @@
     </main>
 
     <script>
+        // FUNGSI UNTUK MENGAMBIL SISA TOKEN DARI SERVER
+        async function updateTokenDisplay() {
+            try {
+                const response = await fetch('/auth/me'); // Pastikan endpoint ini ada di auth.js Anda
+                const data = await response.json();
+                if(data.success) {
+                    document.getElementById('tokenDisplay').innerText = data.user.tokens;
+                }
+            } catch (err) {
+                console.log("Gagal mengambil info token");
+            }
+        }
+
+        // Jalankan saat pertama kali buka halaman
+        updateTokenDisplay();
+
         function handleCamera() {
             document.getElementById('cameraInput').click();
         }
 
-        // PERBAIKAN: Fungsi handleFile dengan limit 10 file
         function handleFile(input) {
             const maxFiles = 10;
             if (input.files && input.files.length > 0) {
@@ -190,7 +210,7 @@
                         confirmButtonColor: '#0d1117',
                         borderRadius: '25px'
                     });
-                    input.value = ""; // Menghapus file yang terpilih agar tidak lanjut proses
+                    input.value = "";
                     return;
                 }
                 
@@ -212,7 +232,6 @@
             const camFiles = document.getElementById('cameraInput').files;
             const regularFiles = document.getElementById('fileInput').files;
             
-            // Gabungkan atau pilih salah satu sumber file
             const filesToSend = camFiles.length > 0 ? camFiles : regularFiles;
 
             if(!subject || !count) {
@@ -230,7 +249,6 @@
             formData.append('level', level);
             formData.append('type', type);
             
-            // Masukkan semua file yang terpilih ke formData
             for (let i = 0; i < filesToSend.length; i++) {
                 formData.append('images[]', filesToSend[i]);
             }
@@ -282,6 +300,8 @@
                             </div>
                         </div>
                     `;
+                    // PERBARUI TAMPILAN TOKEN SETELAH BERHASIL GENERATE
+                    updateTokenDisplay();
                     Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: data.error });
