@@ -110,7 +110,9 @@ app.post("/auth/forgot-password", async (req, res) => {
             </div>
             <p style="font-size: 11px; color: #999;">Kode ini bersifat rahasia dan akan kedaluwarsa dalam 10 menit.</p>
         </div>`;
-    sendSmtpEmail.sender = { "name": "Soal AI", "email": "noreply@soalai.com" };
+    
+    // PENGATURAN EMAIL PENGIRIM (SENDER)
+    sendSmtpEmail.sender = { "name": "Soal AI", "email": "azhardax94@gmail.com" };
     sendSmtpEmail.to = [{ "email": email }];
 
     try {
