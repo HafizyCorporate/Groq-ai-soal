@@ -1,7 +1,25 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
+const fs = require("fs");
 
-const db = new sqlite3.Database("database.db");
+// --- LOGIKA PENYIMPANAN RAILWAY (PERSISTENT) ---
+// Jika di Railway, simpan di /app/data/ agar tidak hilang. Jika lokal, simpan di folder biasa.
+const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.PORT;
+const dbDir = isRailway ? "/app/data" : path.join(__dirname);
+const dbPath = path.join(dbDir, "database.db");
+
+// Buat folder jika belum ada (Penting untuk Railway Volume)
+if (isRailway && !fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error("Gagal membuka database:", err.message);
+  } else {
+    console.log("Database aktif di:", dbPath);
+  }
+});
 
 db.serialize(() => {
   // Tabel User lengkap dengan role
@@ -22,7 +40,7 @@ db.serialize(() => {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Pastikan kolom baru ada jika tabel lama sudah ada
+  // Pastikan kolom baru ada jika tabel lama sudah ada (Graceful error handling)
   db.run("ALTER TABLE users ADD COLUMN username TEXT", (err) => {});
   db.run("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'", (err) => {});
 
