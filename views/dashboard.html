@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SOAL AI</title>
+    <title>Dashboard - GuruBantuGuru</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -72,10 +72,10 @@
 
     <nav class="flex items-center justify-between px-8 py-6 max-w-[1600px] mx-auto">
         <h1 class="text-3xl font-[900] italic tracking-tighter">
-            SOAL <span class="text-blue-600">AI</span>
+            GURU<span class="text-blue-600">BANTUGURU</span>
         </h1>
         <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-lg">
+            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-lg cursor-pointer" onclick="updateTokenDisplay()">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 11V5a1 1 0 112 0v6a1 1 0 11-2 0zM11 14a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
                 <span class="text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
             </div>
@@ -179,20 +179,20 @@
     </main>
 
     <script>
-        // FUNGSI UNTUK MENGAMBIL SISA TOKEN DARI SERVER
         async function updateTokenDisplay() {
             try {
-                const response = await fetch('/auth/me'); // Pastikan endpoint ini ada di auth.js Anda
+                const response = await fetch('/auth/me'); 
                 const data = await response.json();
                 if(data.success) {
                     document.getElementById('tokenDisplay').innerText = data.user.tokens;
+                    return data.user.tokens;
                 }
             } catch (err) {
                 console.log("Gagal mengambil info token");
             }
+            return 0;
         }
 
-        // Jalankan saat pertama kali buka halaman
         updateTokenDisplay();
 
         function handleCamera() {
@@ -231,16 +231,10 @@
             
             const camFiles = document.getElementById('cameraInput').files;
             const regularFiles = document.getElementById('fileInput').files;
-            
             const filesToSend = camFiles.length > 0 ? camFiles : regularFiles;
 
             if(!subject || !count) {
-                return Swal.fire({ 
-                    icon: 'warning', 
-                    title: 'Mohon Maaf', 
-                    text: 'Pastikan Mata Pelajaran dan Jumlah Soal sudah terisi.',
-                    borderRadius: '25px'
-                });
+                return Swal.fire({ icon: 'warning', title: 'Mohon Maaf', text: 'Mata Pelajaran dan Jumlah Soal wajib diisi.', borderRadius: '25px'});
             }
 
             const formData = new FormData();
@@ -248,10 +242,7 @@
             formData.append('count', count);
             formData.append('level', level);
             formData.append('type', type);
-            
-            for (let i = 0; i < filesToSend.length; i++) {
-                formData.append('images[]', filesToSend[i]);
-            }
+            for (let i = 0; i < filesToSend.length; i++) { formData.append('images[]', filesToSend[i]); }
 
             Swal.fire({
                 title: 'Mohon Tunggu Sebentar',
@@ -300,14 +291,36 @@
                             </div>
                         </div>
                     `;
-                    // PERBARUI TAMPILAN TOKEN SETELAH BERHASIL GENERATE
                     updateTokenDisplay();
                     Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Gagal', text: data.error });
+                    // LOGIKA TOKEN HABIS DENGAN LINK WHATSAPP
+                    if (data.error && data.error.includes("Token habis")) {
+                        Swal.fire({
+                            title: '<span class="font-black text-red-600">TOKEN HABIS!</span>',
+                            html: `
+                                <div class="p-2">
+                                    <p class="text-gray-600 mb-5 font-semibold">Maaf Bapak/Ibu, kuota pembuatan soal Anda sudah habis. Silakan isi ulang untuk lanjut.</p>
+                                    <a href="https://wa.me/6282240400388?text=Halo%20Admin%20GuruBantuGuru,%20saya%20ingin%20isi%20ulang%20token" 
+                                       target="_blank" 
+                                       class="bg-[#25D366] text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-lg inline-block"
+                                       style="text-decoration: none;">
+                                       Hubungi Admin GuruBantuGuru
+                                    </a>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            showConfirmButton: false,
+                            showCancelButton: true,
+                            cancelButtonText: 'Nanti Saja',
+                            borderRadius: '30px'
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: data.error, borderRadius: '25px' });
+                    }
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI.' });
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI. Pastikan token Anda mencukupi.', borderRadius: '25px' });
             }
         }
 
@@ -321,30 +334,8 @@
         function exportToWord() {
             const element = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
-
-            if (!element) {
-                return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
-            }
-
-            const content = element.innerHTML;
-            const htmlString = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset='utf-8'>
-                    <style>
-                        body { font-family: "Times New Roman", serif; font-size: 12pt; }
-                        table { border-collapse: collapse; width: 100%; border: 1px solid black; }
-                        td { border: 1px solid black; padding: 5px; }
-                        p { margin-bottom: 15px; text-align: justify; }
-                    </style>
-                </head>
-                <body>
-                    ${content}
-                </body>
-                </html>
-            `;
-
+            if (!element) return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
+            const htmlString = `<!DOCTYPE html><html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 12pt; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } td { border: 1px solid black; padding: 5px; } p { margin-bottom: 15px; text-align: justify; }</style></head><body>${element.innerHTML}</body></html>`;
             const converted = htmlDocx.asBlob(htmlString);
             const link = document.createElement('a');
             link.href = URL.createObjectURL(converted);
