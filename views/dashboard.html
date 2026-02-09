@@ -21,44 +21,48 @@
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.6);
         }
-        /* Memperbesar line-height dan font prose */
-        .prose { line-height: 1.8; color: #374151; font-size: 1.1rem; }
-        .prose h1, .prose h2 { font-weight: 800; color: #111827; }
 
-        /* --- TAMBAHAN UNTUK MERAPIKAN HASIL SOAL BANYAK --- */
+        /* PERUBAHAN: Area Review Lebih Tinggi */
         #outputContent {
-            max-height: 700px;
+            max-height: 850px;
             overflow-y: auto;
-            padding-right: 15px;
+            padding-right: 10px;
             scrollbar-width: thin;
             scrollbar-color: #2563eb #f8faff;
         }
 
-        #outputContent::-webkit-scrollbar {
-            width: 6px;
-        }
-        #outputContent::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 10px;
-        }
-        #outputContent::-webkit-scrollbar-track {
-            background: #f8faff;
-        }
+        #outputContent::-webkit-scrollbar { width: 6px; }
+        #outputContent::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* Style Khusus Naskah Ujian untuk Tampilan Preview - Font diperbesar ke 13pt */
+        /* PERUBAHAN: Desain Naskah & Spasi Antar Soal */
         .naskah-ujian {
             font-family: 'Times New Roman', Times, serif !important;
             color: black !important;
             background: white;
-            padding: 40px;
+            padding: 50px;
             border: 1px solid #e5e7eb;
             font-size: 13pt !important;
+            line-height: 1.5;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        /* Memberikan jarak otomatis antar nomor soal */
+        .naskah-ujian p, .naskah-ujian div {
+            margin-bottom: 25px !important; 
+        }
+
+        /* Merapikan pilihan ganda agar tidak terlalu rapat */
+        .naskah-ujian br {
+            content: "";
+            margin-bottom: 5px;
+            display: block;
         }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <nav class="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
+    <nav class="flex items-center justify-between px-8 py-6 max-w-[1600px] mx-auto">
         <h1 class="text-3xl font-[900] italic tracking-tighter">
             SOAL <span class="text-blue-600">AI</span>
         </h1>
@@ -73,14 +77,13 @@
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-6 py-8">
+    <main class="max-w-[1600px] mx-auto px-6 py-8">
         <div class="mb-10">
             <h2 class="text-4xl font-black tracking-tight mb-2">Selamat Datang Bapak/Ibu Guru! 👋</h2>
             <p class="text-gray-600 font-semibold text-lg">Mari susun soal ujian berkualitas dengan bantuan teknologi kecerdasan buatan.</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 space-y-6">
                 <div class="glass-card p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
                     <h3 class="text-blue-600 font-black text-sm uppercase tracking-[0.2em] mb-6">Konfigurasi Soal</h3>
@@ -120,11 +123,13 @@
                                 <span class="text-[11px] font-black uppercase tracking-tighter">Kamera</span>
                             </button>
                             
-                            <label class="flex flex-col items-center justify-center gap-2 bg-purple-50 text-purple-600 p-5 rounded-3xl hover:bg-purple-600 hover:text-white transition-all border border-purple-100 cursor-pointer">
+                            <label onclick="document.getElementById('fileInput').click()" class="flex flex-col items-center justify-center gap-2 bg-purple-50 text-purple-600 p-5 rounded-3xl hover:bg-purple-600 hover:text-white transition-all border border-purple-100 cursor-pointer">
                                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                 <span class="text-[11px] font-black uppercase tracking-tighter text-center">Lampiran File</span>
-                                <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)">
                             </label>
+
+                            <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFile(this)">
+                            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)">
                         </div>
 
                         <div class="pt-4 space-y-3">
@@ -139,16 +144,11 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-2">
-                <div id="resultArea" class="glass-card min-h-[600px] p-10 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative">
-                    
+            <div class="lg:col-span-3">
+                <div id="resultArea" class="glass-card min-h-[600px] p-6 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative">
                     <div id="exportToolbar" class="hidden flex justify-end gap-3 mb-8">
-                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-md">
-                            Unduh PDF
-                        </button>
-                        <button onclick="exportToWord()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">
-                            Unduh Word
-                        </button>
+                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-md">Unduh PDF</button>
+                        <button onclick="exportToWord()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">Unduh Word</button>
                     </div>
 
                     <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
@@ -166,16 +166,16 @@
     </main>
 
     <script>
-        // ... (Script tetap sama seperti versi sebelumnya) ...
+        // FUNGSI KAMERA (TIDAK BERUBAH)
         function handleCamera() {
-            document.getElementById('fileInput').click();
+            document.getElementById('cameraInput').click();
         }
 
         function handleFile(input) {
             if (input.files && input.files[0]) {
                 Swal.fire({
-                    title: 'File Berhasil Diunggah',
-                    text: `Siap memproses: ${input.files[0].name}`,
+                    title: 'Berhasil!',
+                    text: `File/Foto siap diproses: ${input.files[0].name}`,
                     icon: 'success',
                     confirmButtonColor: '#0d1117',
                     borderRadius: '25px'
@@ -187,13 +187,16 @@
             const subject = document.getElementById('subject').value;
             const count = document.getElementById('count').value;
             const level = document.getElementById('level').value;
-            const fileInput = document.getElementById('fileInput');
+            
+            const camFile = document.getElementById('cameraInput').files[0];
+            const regularFile = document.getElementById('fileInput').files[0];
+            const fileToSend = camFile || regularFile;
 
             if(!subject || !count) {
                 return Swal.fire({ 
                     icon: 'warning', 
                     title: 'Mohon Maaf', 
-                    text: 'Pastikan Mata Pelajaran dan Jumlah Soal sudah terisi dengan benar.',
+                    text: 'Pastikan Mata Pelajaran dan Jumlah Soal sudah terisi.',
                     borderRadius: '25px'
                 });
             }
@@ -203,10 +206,7 @@
             formData.append('count', count);
             formData.append('level', level);
             formData.append('type', type);
-            
-            if (fileInput.files[0]) {
-                formData.append('image', fileInput.files[0]);
-            }
+            if (fileToSend) formData.append('image', fileToSend);
 
             Swal.fire({
                 title: 'Mohon Tunggu Sebentar',
@@ -216,10 +216,7 @@
             });
 
             try {
-                const response = await fetch('/ai/generate', {
-                    method: 'POST',
-                    body: formData 
-                });
+                const response = await fetch('/ai/generate', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if(data.success) {
@@ -239,8 +236,7 @@
                                 <h1 style="margin: 5px 0; font-size: 18pt; text-transform: uppercase;">NAMA SEKOLAH ASAL BAPAK/IBU</h1>
                                 <p style="margin: 0; font-size: 12pt; font-style: italic;">Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id</p>
                             </div>
-
-                            <table style="width: 100%; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 25px; font-size: 13pt; font-weight: bold;">
+                            <table style="width: 100%; border-bottom: 2px solid black; padding-bottom: 15px; margin-bottom: 30px; font-size: 13pt; font-weight: bold;">
                                 <tr>
                                     <td width="20%">MATA PELAJARAN</td><td width="2%">:</td><td width="30%">${subject.toUpperCase()}</td>
                                     <td width="20%">HARI / TANGGAL</td><td width="2%">:</td><td width="26%">..........................</td>
@@ -250,81 +246,45 @@
                                     <td>WAKTU</td><td>:</td><td>........ MENIT</td>
                                 </tr>
                             </table>
-
-                            <div style="font-size: 13pt; text-align: justify; line-height: 1.6;">
+                            <div style="font-size: 13pt; text-align: justify;">
                                 ${data.result}
                             </div>
-
                             <div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 13pt;">
-                                <div style="text-align: center; width: 250px;">
-                                    Mengetahui,<br>Kepala Sekolah<br><br><br><br><br>
-                                    ( ................................ )<br>NIP. ............................
-                                </div>
-                                <div style="text-align: center; width: 250px;">
-                                    Kota, ${today}<br>Guru Mata Pelajaran<br><br><br><br><br>
-                                    ( ................................ )<br>NIP. ............................
-                                </div>
+                                <div style="text-align: center; width: 250px;">Mengetahui,<br>Kepala Sekolah<br><br><br><br><br>( ................................ )<br>NIP. ............................</div>
+                                <div style="text-align: center; width: 250px;">Kota, ${today}<br>Guru Mata Pelajaran<br><br><br><br><br>( ................................ )<br>NIP. ............................</div>
                             </div>
                         </div>
                     `;
-                    
-                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Naskah ujian telah siap.', timer: 2000, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: data.error });
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Gangguan Sistem', text: 'Gagal terhubung ke layanan AI.' });
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI.' });
             }
         }
 
+        // FUNGSI EXPORT (TIDAK BERUBAH)
         function exportToPDF() {
             const element = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
-            const opt = {
-                margin: 0.5,
-                filename: `Naskah_Soal_${subject}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-            Swal.fire({ title: 'Menyiapkan PDF...', didOpen: () => Swal.showLoading(), timer: 1000 });
+            const opt = { margin: 0.5, filename: `Naskah_Soal_${subject}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
             html2pdf().set(opt).from(element).save();
         }
 
         function exportToWord() {
             const subject = document.getElementById('subject').value || 'Soal_AI';
             const content = document.getElementById('printableArea').innerHTML;
-            const htmlString = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><style>
-                    body { font-family: "Times New Roman", serif; font-size: 13pt; }
-                    table { border-collapse: collapse; width: 100%; }
-                </style></head>
-                <body>${content}</body></html>`;
+            const htmlString = `<html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 13pt; } table { border-collapse: collapse; width: 100%; } p { margin-bottom: 20px; }</style></head><body>${content}</body></html>`;
             const converted = htmlDocx.asBlob(htmlString);
             const link = document.createElement('a');
             link.href = URL.createObjectURL(converted);
             link.download = `Naskah_Soal_${subject}.docx`;
-            Swal.fire({ title: 'Menyiapkan Word...', didOpen: () => Swal.showLoading(), timer: 1000 });
             link.click();
         }
 
         function confirmLogout() {
-            Swal.fire({
-                title: 'Apakah Anda Yakin?',
-                text: "Sesi kerja Anda saat ini akan diakhiri.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#0d1117',
-                cancelButtonColor: '#f3f4f6',
-                confirmButtonText: 'Ya, Keluar',
-                cancelButtonText: '<span style="color: #9ca3af">Batal</span>',
-                borderRadius: '25px'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '/auth/logout';
-                }
-            })
+            Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#0d1117' }).then((result) => { if (result.isConfirmed) window.location.href = '/auth/logout'; });
         }
     </script>
 </body>
