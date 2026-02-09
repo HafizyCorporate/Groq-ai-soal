@@ -111,15 +111,9 @@
     </main>
 
     <script>
-        // FUNGSI UNTUK KAMERA
+        // FUNGSI UNTUK KAMERA (Sekarang langsung memicu input file)
         function handleCamera() {
-            Swal.fire({
-                title: 'Akses Kamera',
-                text: 'Fitur ini akan membuka kamera untuk memotret soal.',
-                icon: 'info',
-                confirmButtonColor: '#0d1117',
-                borderRadius: '30px'
-            });
+            document.getElementById('fileInput').click();
         }
 
         // FUNGSI UNTUK FILE
@@ -128,7 +122,7 @@
                 const fileName = input.files[0].name;
                 Swal.fire({
                     title: 'File Terpilih',
-                    text: `Berhasil mengunggah: ${fileName}`,
+                    text: `Berhasil memilih: ${fileName}`,
                     icon: 'success',
                     confirmButtonColor: '#0d1117',
                     borderRadius: '30px'
@@ -154,12 +148,23 @@
             })
         }
 
+        // --- FUNGSI GENERATE SOAL (DIPERBARUI) ---
         async function generateSoal() {
             const subject = document.getElementById('subject').value;
             const count = document.getElementById('count').value;
+            const fileInput = document.getElementById('fileInput');
 
             if(!subject || !count) {
                 return Swal.fire({ icon: 'error', title: 'Data Kurang', text: 'Mohon isi subjek dan jumlah soal.', borderRadius: '30px' });
+            }
+
+            // Gunakan FormData untuk mengirim teks dan file sekaligus
+            const formData = new FormData();
+            formData.append('subject', subject);
+            formData.append('count', count);
+            
+            if (fileInput.files[0]) {
+                formData.append('image', fileInput.files[0]);
             }
 
             Swal.fire({
@@ -172,8 +177,8 @@
             try {
                 const response = await fetch('/ai/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subject, count })
+                    // Note: Jangan set header Content-Type manual saat menggunakan FormData
+                    body: formData 
                 });
                 const data = await response.json();
 
@@ -186,9 +191,11 @@
                     output.innerHTML = `<div id="printableArea" class="prose max-w-none font-medium text-gray-700">${data.result}</div>`;
                     
                     Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Soal berhasil dibuat.', timer: 2000, showConfirmButton: false });
+                } else {
+                    Swal.fire({ icon: 'warning', title: 'Pemberitahuan', text: data.error || 'Gagal memproses soal.', borderRadius: '30px' });
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Gangguan Sistem', text: 'Gagal terhubung ke AI.' });
+                Swal.fire({ icon: 'error', title: 'Gangguan Sistem', text: 'Gagal terhubung ke AI.', borderRadius: '30px' });
             }
         }
 
