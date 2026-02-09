@@ -8,42 +8,61 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
+        .modal-hidden { display: none; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
-    <div class="mb-10 text-center">
-        <h1 class="text-4xl font-black italic tracking-tighter text-[#1a1a1a]">
-            JAWABAN <span class="text-blue-600">AI</span>
-        </h1>
+    <div id="loginSection" class="w-full flex flex-col items-center">
+        <div class="mb-10 text-center">
+            <h1 class="text-4xl font-black italic tracking-tighter text-[#1a1a1a]">
+                JAWABAN <span class="text-blue-600">AI</span>
+            </h1>
+        </div>
+
+        <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.07)] border border-gray-50 w-full max-w-[400px] p-10">
+            <h2 class="text-center text-blue-600 font-bold tracking-widest text-xs mb-8 uppercase">
+                Masuk Ke Akun
+            </h2>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <input type="text" id="email" placeholder="Username atau Email" 
+                        class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Password" 
+                        class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
+                </div>
+                <button type="submit" id="btnLogin" 
+                    class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+                    Masuk Sekarang
+                </button>
+            </form>
+            
+            <div class="flex justify-between mt-8 px-2">
+                <button onclick="toggleModal(true)" class="text-[11px] text-gray-400 font-medium hover:text-gray-600 cursor-pointer">Lupa?</button>
+                <a href="/register" class="text-[11px] text-blue-600 font-bold hover:underline">Daftar Akun</a>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.07)] border border-gray-50 w-full max-w-[400px] p-10">
-        
-        <h2 class="text-center text-blue-600 font-bold tracking-widest text-xs mb-8 uppercase">
-            Masuk Ke Akun
-        </h2>
-        
-        <form id="loginForm" class="space-y-4">
-            <div>
-                <input type="text" id="email" placeholder="Username atau Email" 
-                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
+    <div id="forgotModal" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 modal-hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-gray-50 w-full max-w-[400px] p-10 relative">
+            <h2 class="text-center text-blue-600 font-bold tracking-widest text-xs mb-8 uppercase">
+                Pemulihan Akun
+            </h2>
+            <form id="forgotForm" class="space-y-4">
+                <input type="email" id="resetEmail" placeholder="hafizyazhar@gmail.com" 
+                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-medium" required>
+                <button type="submit" id="btnForgot" 
+                    class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 uppercase text-sm tracking-widest shadow-lg">
+                    Kirim Link Reset
+                </button>
+            </form>
+            <div class="text-center mt-6">
+                <button onclick="toggleModal(false)" class="text-[11px] text-blue-600 font-bold hover:underline">Kembali Login</button>
             </div>
-            
-            <div>
-                <input type="password" id="password" placeholder="Password" 
-                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
-            </div>
-            
-            <button type="submit" id="btnLogin" 
-                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-sm tracking-widest">
-                Masuk Sekarang
-            </button>
-        </form>
-        
-        <div class="flex justify-between mt-8 px-2">
-            <a href="#" class="text-[11px] text-gray-400 font-medium hover:text-gray-600">Lupa?</a>
-            <a href="/register" class="text-[11px] text-blue-600 font-bold hover:underline">Daftar Akun</a>
         </div>
     </div>
 
@@ -54,13 +73,20 @@
     </footer>
 
     <script>
+        // Fungsi buka/tutup modal lupa password
+        function toggleModal(show) {
+            const modal = document.getElementById('forgotModal');
+            if (show) modal.classList.remove('modal-hidden');
+            else modal.classList.add('modal-hidden');
+        }
+
+        // LOGIKA LOGIN
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnLogin');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            // Efek Loading seperti di gambar
             btn.innerHTML = '⏳ TUNGGU SEBENTAR...';
             btn.disabled = true;
 
@@ -70,19 +96,38 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
-
                 const data = await response.json();
-                
+                if (data.success) { window.location.href = '/dashboard'; } 
+                else { alert('Gagal: ' + data.error); btn.innerText = 'Masuk Sekarang'; btn.disabled = false; }
+            } catch (err) { alert('Koneksi server terputus'); btn.innerText = 'Masuk Sekarang'; btn.disabled = false; }
+        };
+
+        // LOGIKA LUPA PASSWORD (API BREVO)
+        document.getElementById('forgotForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnForgot');
+            const email = document.getElementById('resetEmail').value;
+
+            btn.innerHTML = '⏳ TUNGGU SEBENTAR...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
                 if (data.success) {
-                    window.location.href = '/dashboard'; 
+                    alert('Berhasil! Cek email kamu untuk link reset.');
+                    toggleModal(false);
                 } else {
                     alert('Gagal: ' + data.error);
-                    btn.innerText = 'Masuk Sekarang';
-                    btn.disabled = false;
                 }
             } catch (err) {
-                alert('Koneksi server terputus');
-                btn.innerText = 'Masuk Sekarang';
+                alert('Gagal mengirim permintaan pemulihan.');
+            } finally {
+                btn.innerText = 'Kirim Link Reset';
                 btn.disabled = false;
             }
         };
