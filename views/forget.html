@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemulihan Akun - JAWABAN AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="mb-10 text-center">
+        <h1 class="text-4xl font-black italic tracking-tighter text-[#1a1a1a]">
+            JAWABAN <span class="text-[#3b82f6]">AI</span>
+        </h1>
+    </div>
+
+    <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[400px] p-10">
+        
+        <h2 class="text-center text-[#3b82f6] font-bold tracking-widest text-[11px] mb-8 uppercase">
+            Pemulihan Akun
+        </h2>
+
+        <form id="forgotForm" class="space-y-6">
+            <div class="relative">
+                <input type="email" id="email" placeholder="hafizyazhar@gmail.com" required
+                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium">
+            </div>
+
+            <button type="submit" id="btnSubmit" 
+                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-[0.98] uppercase text-xs tracking-widest">
+                Kirim Link Reset
+            </button>
+        </form>
+
+        <div class="flex justify-between mt-8 px-2">
+            <a href="#" class="text-[10px] text-gray-300 font-medium hover:text-gray-500">Lupa?</a>
+            <a href="/login" class="text-[10px] text-[#3b82f6] font-bold hover:underline transition">Kembali Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('forgotForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const email = document.getElementById('email').value;
+
+            // Animasi Loading sesuai gambar
+            btn.innerHTML = '⏳ TUNGGU SEBENTAR...';
+            btn.disabled = true;
+
+            try {
+                // Ganti URL ini sesuai dengan route di backend kamu
+                const response = await fetch('/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    btn.innerHTML = '✅ BERHASIL DIKIRIM';
+                    btn.style.backgroundColor = '#10b981'; // Hijau sukses
+                    alert('Link pemulihan telah dikirim ke email kamu!');
+                } else {
+                    alert('Gagal: ' + data.error);
+                    btn.innerHTML = 'Kirim Link Reset';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi ke server.');
+                btn.innerHTML = 'Kirim Link Reset';
+                btn.disabled = false;
+            }
+        };
+    </script>
+
+</body>
+</html>
