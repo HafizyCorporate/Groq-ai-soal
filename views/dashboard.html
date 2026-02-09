@@ -23,6 +23,27 @@
         }
         .prose { line-height: 1.7; color: #374151; }
         .prose h1, .prose h2 { font-weight: 800; color: #111827; }
+
+        /* --- TAMBAHAN UNTUK MERAPIKAN HASIL SOAL BANYAK --- */
+        #outputContent {
+            max-height: 700px; /* Batas tinggi agar tidak memanjang ke bawah */
+            overflow-y: auto;  /* Aktifkan scroll vertikal */
+            padding-right: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: #2563eb #f8faff;
+        }
+
+        /* Mempercantik Scrollbar untuk Chrome/Safari */
+        #outputContent::-webkit-scrollbar {
+            width: 6px;
+        }
+        #outputContent::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+        #outputContent::-webkit-scrollbar-track {
+            background: #f8faff;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -128,7 +149,7 @@
                         <p class="text-gray-400 text-sm max-w-sm">Silakan lengkapi konfigurasi di samping dan klik tombol generate untuk melihat draf soal ujian Anda.</p>
                     </div>
                     
-                    <div id="outputContent" class="hidden"></div>
+                    <div id="outputContent" class="hidden prose max-w-none text-gray-800"></div>
                 </div>
             </div>
         </div>
@@ -269,3 +290,4 @@
     </script>
 </body>
 </html>
+
