@@ -123,7 +123,42 @@ app.post("/auth/forgot-password", async (req, res) => {
 });
 
 // ==========================================
-// 7. JALANKAN SERVER
+// 7. RUTE VERIFIKASI OTP & UPDATE PASSWORD
+// ==========================================
+app.post("/auth/reset-password", async (req, res) => {
+    const { email, otp, newPassword } = req.body;
+    const bcrypt = require("bcrypt");
+    const db = require("./db"); // Pastikan file db.js tersedia
+
+    const record = otpStorage[email];
+
+    // Cek apakah OTP valid
+    if (!record || record.code !== otp) {
+        return res.status(400).json({ success: false, error: "Kode OTP salah." });
+    }
+
+    // Cek apakah OTP sudah kedaluwarsa
+    if (Date.now() > record.expires) {
+        delete otpStorage[email];
+        return res.status(400).json({ success: false, error: "Kode OTP sudah kedaluwarsa." });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        db.run("UPDATE users SET password = ? WHERE email = ?", [hashedPassword, email], function(err) {
+            if (err) {
+                return res.status(500).json({ success: false, error: "Gagal update database." });
+            }
+            delete otpStorage[email]; // Hapus OTP setelah sukses
+            res.json({ success: true, message: "Password berhasil dirubah!" });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Terjadi kesalahan sistem." });
+    }
+});
+
+// ==========================================
+// 8. JALANKAN SERVER
 // ==========================================
 app.listen(PORT, () => {
     console.log(`
