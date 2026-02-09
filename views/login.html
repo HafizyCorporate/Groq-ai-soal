@@ -15,49 +15,49 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
 
-    <div class="mb-14 text-center">
-        <h1 class="text-7xl font-[900] italic tracking-tighter text-[#1a1a1a]">
+    <div class="mb-10 text-center">
+        <h1 class="text-5xl font-black italic tracking-tighter text-[#1a1a1a]">
             SOAL <span class="text-blue-600">AI</span>
         </h1>
-        <p class="text-gray-400 text-sm mt-3 tracking-[0.3em] font-bold uppercase">Sistem Pembuat Soal Otomatis</p>
+        <p class="text-gray-400 text-[10px] mt-2 tracking-[0.2em] font-bold uppercase">Sistem Pembuat Soal Otomatis</p>
     </div>
 
-    <div class="bg-white rounded-[50px] shadow-[0_30px_80px_rgba(0,0,0,0.08)] border border-gray-50 w-full max-w-[450px] p-12">
+    <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[380px] p-10">
         
-        <h2 class="text-center text-blue-600 font-black tracking-[0.2em] text-sm mb-10 uppercase">
+        <h2 class="text-center text-blue-600 font-bold tracking-widest text-[11px] mb-8 uppercase">
             Masuk Ke Akun
         </h2>
         
-        <form id="loginForm" class="space-y-6">
+        <form id="loginForm" class="space-y-4">
             <div>
                 <input type="text" id="email" placeholder="Username atau Email" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-8 rounded-2xl text-lg text-gray-700 placeholder-gray-400 focus:ring-4 focus:ring-blue-200 outline-none transition-all font-semibold" required>
+                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
             </div>
             
             <div>
                 <input type="password" id="password" placeholder="Password" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-8 rounded-2xl text-lg text-gray-700 placeholder-gray-400 focus:ring-4 focus:ring-blue-200 outline-none transition-all font-semibold" required>
+                    class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
             </div>
             
             <button type="submit" id="btnLogin" 
-                class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl active:scale-95 uppercase text-base tracking-widest">
-                MASUK SEKARANG
+                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+                Masuk Sekarang
             </button>
         </form>
         
-        <div class="flex justify-between mt-10 px-2">
-            <div class="text-[12px] text-gray-400 font-bold">
-                Lupa? <a href="/forget" class="text-blue-600 hover:underline">Klik Disini</a>
+        <div class="flex justify-between mt-8 px-2">
+            <div class="text-[11px] text-gray-400 font-medium">
+                Lupa? <a href="/forget" class="text-blue-600 font-bold hover:underline">Klik Disini</a>
             </div>
-            <a href="/register" class="text-[12px] text-blue-600 font-black hover:underline transition uppercase tracking-wider">
+            <a href="/register" class="text-[11px] text-blue-600 font-bold hover:underline transition uppercase tracking-wider">
                 Daftar Akun
             </a>
         </div>
     </div>
 
-    <footer class="mt-24">
-        <p class="text-gray-300 text-[11px] tracking-[0.4em] font-black uppercase text-center">
-            MADE BY : <span class="text-gray-500">TE AZ HA</span>
+    <footer class="mt-20">
+        <p class="text-gray-300 text-[10px] tracking-[0.3em] font-bold uppercase text-center">
+            Made by : <span class="text-gray-400">Te Az Ha</span>
         </p>
     </footer>
 
@@ -84,12 +84,12 @@
                     window.location.href = '/dashboard'; 
                 } else {
                     alert('Gagal: ' + data.error);
-                    btn.innerText = 'MASUK SEKARANG';
+                    btn.innerText = 'Masuk Sekarang';
                     btn.disabled = false;
                 }
             } catch (err) {
                 alert('Koneksi server terputus');
-                btn.innerText = 'MASUK SEKARANG';
+                btn.innerText = 'Masuk Sekarang';
                 btn.disabled = false;
             }
         };
