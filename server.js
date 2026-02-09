@@ -9,10 +9,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Penyimpanan OTP sementara di memori server
+const otpStorage = {}; 
+
 // ==========================================
 // 1. KONFIGURASI AI (GEMINI 2.5 FLASH)
 // ==========================================
-// Menggunakan model terbaru sesuai pilihan di Google AI Studio
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const modelAI = genAI.getGenerativeModel({ 
     model: "gemini-2.5-flash" 
@@ -60,61 +62,63 @@ app.use("/export", require("./routes/export"));
 // 5. RUTE NAVIGASI HALAMAN (VIEWS)
 // ==========================================
 
-// Halaman Login Utama
 app.get("/", (req, res) => {
     if (req.session.user) return res.redirect("/dashboard");
     res.sendFile(path.join(__dirname, "views/login.html"));
 });
 
-// Halaman Register
 app.get("/register", (req, res) => {
     if (req.session.user) return res.redirect("/dashboard");
     res.sendFile(path.join(__dirname, "views/register.html"));
 });
 
-// FIX: Rute Forget Password agar tidak error Cannot GET /forget
 app.get("/forget", (req, res) => {
     res.sendFile(path.join(__dirname, "views/forget.html"));
 });
 
-// Halaman Dashboard
 app.get("/dashboard", (req, res) => {
     if (!req.session.user) return res.redirect("/");
     res.sendFile(path.join(__dirname, "views/dashboard.html"));
 });
 
 // ==========================================
-// 6. LOGIKA FORGOT PASSWORD (BREVO API)
+// 6. LOGIKA FORGOT PASSWORD (DENGAN KODE OTP)
 // ==========================================
 app.post("/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
     
+    // Generate kode OTP 6 digit secara acak
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Simpan OTP ke memori server (terkait dengan email user)
+    otpStorage[email] = {
+        code: otpCode,
+        expires: Date.now() + 600000 // Berlaku 10 menit
+    };
+
     let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
-    sendSmtpEmail.subject = "Pemulihan Akun - JAWABAN AI";
+    sendSmtpEmail.subject = "Kode Verifikasi Keamanan - SOAL AI";
     sendSmtpEmail.htmlContent = `
-        <div style="font-family: sans-serif; padding: 30px; border: 1px solid #f0f0f0; border-radius: 20px; max-width: 500px; margin: auto;">
+        <div style="font-family: sans-serif; padding: 30px; border: 1px solid #f0f0f0; border-radius: 20px; max-width: 400px; margin: auto; text-align: center;">
             <h1 style="color: #1a1a1a; font-style: italic; letter-spacing: -1px;">
-                JAWABAN <span style="color: #2563eb;">AI</span>
+                SOAL <span style="color: #2563eb;">AI</span>
             </h1>
-            <p>Halo,</p>
-            <p>Kami menerima permintaan untuk mereset password akun kamu di sistem JAWABAN AI.</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="https://${req.get('host')}/reset-password?email=${email}" 
-                   style="background: #0d1117; color: white; padding: 15px 25px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">
-                   RESET PASSWORD SEKARANG
-                </a>
+            <p style="color: #666; font-size: 14px;">Halo,</p>
+            <p style="color: #666; font-size: 14px;">Gunakan kode verifikasi di bawah ini untuk merubah password akun kamu:</p>
+            <div style="background: #eff4ff; padding: 20px; border-radius: 15px; margin: 25px 0;">
+                <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #2563eb;">${otpCode}</span>
             </div>
-            <p style="font-size: 11px; color: #999;">Abaikan email ini jika kamu tidak merasa melakukan permintaan reset.</p>
+            <p style="font-size: 11px; color: #999;">Kode ini bersifat rahasia dan akan kedaluwarsa dalam 10 menit.</p>
         </div>`;
-    sendSmtpEmail.sender = { "name": "Jawaban AI", "email": "noreply@jawabanai.com" };
+    sendSmtpEmail.sender = { "name": "Soal AI", "email": "noreply@soalai.com" };
     sendSmtpEmail.to = [{ "email": email }];
 
     try {
         await apiInstance.sendTransacEmail(sendSmtpEmail);
-        res.json({ success: true, message: "Email pemulihan terkirim!" });
+        res.json({ success: true, message: "Kode OTP telah dikirim ke email kamu!" });
     } catch (error) {
         console.error("Brevo Error:", error);
-        res.status(500).json({ success: false, error: "Gagal mengirim email." });
+        res.status(500).json({ success: false, error: "Gagal mengirim email verifikasi." });
     }
 });
 
@@ -124,9 +128,9 @@ app.post("/auth/forgot-password", async (req, res) => {
 app.listen(PORT, () => {
     console.log(`
 =============================================
-🚀 JAWABAN AI SERVER IS RUNNING
+🚀 SOAL AI SERVER IS RUNNING
 📱 PORT      : ${PORT}
-📧 EMAIL     : Brevo API (Active)
+📧 EMAIL     : Brevo API (OTP System Active)
 🤖 AI MODEL  : Gemini 2.5 Flash (Active)
 🔗 RUTE      : /forget (Ready)
 =============================================
