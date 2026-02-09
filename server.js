@@ -81,6 +81,12 @@ app.get("/dashboard", (req, res) => {
     res.sendFile(path.join(__dirname, "views/dashboard.html"));
 });
 
+// --- RUTE TAMBAHAN UNTUK HISTORY ---
+app.get("/ai/history_page", (req, res) => {
+    if (!req.session.user) return res.redirect("/");
+    res.sendFile(path.join(__dirname, "views/history.html"));
+});
+
 // ==========================================
 // 6. LOGIKA FORGOT PASSWORD (DENGAN KODE OTP)
 // ==========================================
@@ -186,6 +192,7 @@ app.listen(PORT, () => {
 📧 EMAIL     : Brevo API (OTP System Active)
 🤖 AI MODEL  : Gemini 2.5 Flash (Active)
 🔗 RUTE      : /forget (Ready)
+🔗 HISTORY   : /ai/history_page (Ready)
 =============================================
     `);
 });
