@@ -20,79 +20,34 @@
     </div>
 
     <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[380px] p-10">
-        
-        <h2 class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">
-            Buat Akun Baru
-        </h2>
-        
+        <h2 class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">Buat Akun Baru</h2>
         <form id="registerForm" class="space-y-4">
-            <div>
-                <input type="text" id="username" placeholder="Username" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
-            </div>
-
-            <div>
-                <input type="email" id="email" placeholder="Alamat Email" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
-            </div>
-            
-            <div>
-                <input type="password" id="password" placeholder="Password" 
-                    class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
-            </div>
-            
-            <button type="submit" id="btnRegister" 
-                class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-base tracking-widest">
-                Daftar Sekarang
-            </button>
+            <input type="text" id="username" placeholder="Username" class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
+            <input type="email" id="email" placeholder="Alamat Email" class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
+            <input type="password" id="password" placeholder="Password" class="w-full bg-[#eff4ff] border-none py-5 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-semibold" required>
+            <button type="submit" id="btnRegister" class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-base tracking-widest">Daftar Sekarang</button>
         </form>
-        
         <div class="mt-8 text-center">
-            <p class="text-[12px] text-gray-400 font-bold">
-                Sudah punya akun? <a href="/" class="text-blue-600 hover:underline font-black uppercase ml-1">Login</a>
-            </p>
+            <p class="text-[12px] text-gray-400 font-bold">Sudah punya akun? <a href="/" class="text-blue-600 hover:underline font-black uppercase ml-1">Login</a></p>
         </div>
     </div>
-
-    <footer class="mt-20">
-        <p class="text-gray-300 text-[11px] tracking-[0.4em] font-black uppercase text-center">
-            Made by : <span class="text-gray-400">Te Az Ha</span>
-        </p>
-    </footer>
 
     <script>
         document.getElementById('registerForm').onsubmit = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnRegister');
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-
             btn.innerHTML = '⏳ MEMPROSES...';
             btn.disabled = true;
-
             try {
                 const response = await fetch('/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
+                    body: JSON.stringify({ username: document.getElementById('username').value, email: document.getElementById('email').value, password: document.getElementById('password').value })
                 });
-
                 const data = await response.json();
-                
-                if (data.success) {
-                    alert('Pendaftaran berhasil! Silakan login.');
-                    window.location.href = '/'; 
-                } else {
-                    alert('Gagal: ' + data.error);
-                    btn.innerText = 'Daftar Sekarang';
-                    btn.disabled = false;
-                }
-            } catch (err) {
-                alert('Koneksi server terputus');
-                btn.innerText = 'Daftar Sekarang';
-                btn.disabled = false;
-            }
+                if (data.success) { alert('Pendaftaran berhasil!'); window.location.href = '/'; } 
+                else { alert('Gagal: ' + data.error); btn.innerText = 'Daftar Sekarang'; btn.disabled = false; }
+            } catch (err) { alert('Koneksi server terputus'); btn.innerText = 'Daftar Sekarang'; btn.disabled = false; }
         };
     </script>
 </body>
