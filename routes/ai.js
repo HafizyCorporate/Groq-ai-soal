@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const db = require("../db"); // Pastikan path ke db.js benar
+const db = require("../db"); // Memastikan path ke db.js benar
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const router = express.Router();
@@ -15,6 +15,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
+// Multer mendukung input "image" (dari dashboard) atau "foto" (multi-upload)
 const upload = multer({ dest: uploadDir });
 
 // Fungsi helper untuk mengubah file ke format yang dimengerti Gemini
@@ -27,11 +28,12 @@ function fileToGenerativePart(path, mimeType) {
   };
 }
 
-router.post("/process", upload.array("foto", 5), async (req, res) => {
+// Rute utama /ai/generate sesuai dengan fetch di dashboard.html
+router.post("/generate", upload.single("image"), async (req, res) => {
   try {
     // 1. Validasi Sesi Login
     if (!req.session.user) {
-      return res.status(401).json({ error: "Silakan login terlebih dahulu." });
+      return res.status(401).json({ success: false, error: "Silakan login terlebih dahulu." });
     }
 
     const userId = req.session.user.id;
@@ -48,75 +50,73 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
         );
       });
 
-      if (checkLimit >= 1) {
+      // Limit 5 soal per hari untuk user gratis (bisa kamu sesuaikan)
+      if (checkLimit >= 5) {
         return res.status(403).json({ 
+          success: false,
           error: "Jatah harian habis. Silakan upgrade ke Premium!" 
         });
       }
     }
 
-    // 3. Validasi Input Gambar
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: "Mohon upload minimal 1 gambar materi." });
+    // 3. Ambil Input dari Dashboard
+    const subject = req.body.subject || "Umum";
+    const jumlahDiminta = req.body.count || 5;
+
+    // 4. Siapkan Prompt untuk Gemini 2.5 Flash
+    let prompt = `Kamu adalah AutoSoal AI. 
+    Buatlah TEPAT ${jumlahDiminta} soal pilihan ganda tentang ${subject}.
+    Jika ada gambar yang dilampirkan, analisis materi dari gambar tersebut untuk membuat soal.
+    
+    STRUKTUR OUTPUT WAJIB (FORMAT HTML):
+    Tuliskan soal dengan tag <p> dan pilihan ganda dengan list <ul><li>.
+    Berikan kunci jawaban di bagian paling bawah setelah teks: ###BATAS_AKHIR_SOAL###`;
+
+    let parts = [prompt];
+
+    // Jika ada file gambar (dari Kamera atau Upload)
+    if (req.file) {
+      const imagePart = fileToGenerativePart(req.file.path, req.file.mimetype);
+      parts.push(imagePart);
     }
-    
-    const jumlahDiminta = req.body.jumlah || 5;
-    const jenisSoal = req.body.jenis || "PG";
-
-    // 4. Siapkan Prompt dan Gambar untuk Gemini 2.5 Flash
-    const prompt = `Kamu adalah AutoSoal AI buatan Te Az Ha. 
-    Analisis materi dari gambar yang diberikan secara teliti.
-    Buat TEPAT ${jumlahDiminta} soal dalam bentuk ${jenisSoal}.
-    
-    STRUKTUR OUTPUT WAJIB:
-    1. Tulis daftar soal lengkap.
-    2. Tulis pemisah ini: ###BATAS_AKHIR_SOAL###
-    3. Tulis Kunci Jawaban di bawah pemisah tersebut.`;
-
-    // Mengonversi file upload ke format part Gemini
-    const imageParts = req.files.map(file => 
-      fileToGenerativePart(file.path, file.mimetype)
-    );
 
     // 5. Eksekusi Gemini 2.5 Flash
-    const result = await model.generateContent([prompt, ...imageParts]);
+    const result = await model.generateContent(parts);
     const response = await result.response;
     const fullContent = response.text();
 
     let teksSoal = "";
     let teksJawaban = "";
 
-    // 6. Pemisahan Soal dan Jawaban
+    // 6. Pemisahan Soal dan Jawaban untuk disimpan ke DB
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
-        const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
-        teksSoal = parts[0].trim();
-        teksJawaban = parts[1].trim();
+        const splitParts = fullContent.split("###BATAS_AKHIR_SOAL###");
+        teksSoal = splitParts[0].trim();
+        teksJawaban = splitParts[1].trim();
     } else {
-        const fallbackParts = fullContent.split(/Kunci Jawaban:|Jawaban:/i);
-        teksSoal = fallbackParts[0].trim();
-        teksJawaban = fallbackParts[1] ? "Kunci Jawaban: " + fallbackParts[1].trim() : "Jawaban tersedia di dalam teks.";
+        teksSoal = fullContent;
+        teksJawaban = "Kunci jawaban disertakan dalam teks.";
     }
 
-    // 7. Simpan ke Database History
+    // 7. Simpan ke Database History agar user bisa melihat riwayatnya nanti
     db.run(
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [userId, teksSoal, teksJawaban],
       function (err) {
-        // Hapus file sementara dari folder uploads agar hemat ruang
-        req.files.forEach(file => {
-          if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-        });
+        // Hapus file fisik dari folder uploads agar hemat ruang
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
 
         if (err) {
           console.error(err);
-          return res.status(500).json({ error: "Gagal menyimpan ke database." });
+          return res.status(500).json({ success: false, error: "Gagal menyimpan ke database." });
         }
 
-        // 8. Respon Sukses
+        // 8. Respon Sukses (Mengirimkan hasil gabungan untuk ditampilkan di dashboard)
         res.json({
           success: true,
-          soal: teksSoal,
-          jawaban: teksJawaban,
+          result: `${teksSoal} <br><hr><br> <strong>Kunci Jawaban:</strong> <br> ${teksJawaban}`,
           historyId: this.lastID,
         });
       }
@@ -124,7 +124,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
 
   } catch (err) {
     console.error("Gemini AI Error:", err);
-    res.status(500).json({ error: "Terjadi kesalahan pada sistem Gemini 2.5 Flash." });
+    res.status(500).json({ success: false, error: "Terjadi kesalahan pada sistem Gemini AI." });
   }
 });
 
