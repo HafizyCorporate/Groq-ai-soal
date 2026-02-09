@@ -9,18 +9,27 @@ if (process.env.DATABASE_URL) {
     ssl: { rejectUnauthorized: false }
   });
 
+  // Fungsi pembantu agar urutan $1, $2, $3 dst benar
+  const convertQuery = (query) => {
+    let index = 1;
+    return query.replace(/\?/g, () => `$${index++}`);
+  };
+
   db = {
     run: (query, params, callback) => {
-      const pgQuery = query.replace(/\?/g, (v, i) => `$${i + 1}`);
-      pool.query(pgQuery, params, (err, res) => { if (callback) callback(err, res); });
+      pool.query(convertQuery(query), params, (err, res) => { 
+        if (callback) callback(err, res); 
+      });
     },
     all: (query, params, callback) => {
-      const pgQuery = query.replace(/\?/g, (v, i) => `$${i + 1}`);
-      pool.query(pgQuery, params, (err, res) => { if (callback) callback(err, res ? res.rows : []); });
+      pool.query(convertQuery(query), params, (err, res) => { 
+        if (callback) callback(err, res ? res.rows : []); 
+      });
     },
     get: (query, params, callback) => {
-      const pgQuery = query.replace(/\?/g, (v, i) => `$${i + 1}`);
-      pool.query(pgQuery, params, (err, res) => { if (callback) callback(err, res ? res.rows[0] : null); });
+      pool.query(convertQuery(query), params, (err, res) => { 
+        if (callback) callback(err, res ? res.rows[0] : null); 
+      });
     }
   };
 
