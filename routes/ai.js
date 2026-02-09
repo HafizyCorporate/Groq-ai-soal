@@ -7,9 +7,9 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const router = express.Router();
 
-// 1. Inisialisasi Gemini (Gunakan model flash terbaru yang tersedia)
+// 1. Inisialisasi Gemini (Menggunakan Gemini 2.5 Flash sesuai ketersediaan di AI Studio Anda)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // Konfigurasi Penyimpanan Gambar Sementara
 const uploadDir = path.join(__dirname, "../uploads/");
@@ -38,7 +38,7 @@ router.post("/generate", upload.single("image"), async (req, res) => {
     const userId = req.session.user.id;
     const userRole = req.session.user.role; 
 
-    // 2. Logika Limit Harian (Tetap dipertahankan sesuai kode lama Anda)
+    // 2. Logika Limit Harian
     if (userRole === 'user') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
@@ -60,8 +60,8 @@ router.post("/generate", upload.single("image"), async (req, res) => {
     // 3. Ambil Input Baru dari Dashboard
     const subject = req.body.subject || "Umum";
     const jumlahDiminta = req.body.count || 5;
-    const level = req.body.level || "Umum"; // SD/SMP/SMA
-    const type = req.body.type || "Pilihan Ganda"; // PG/Essay
+    const level = req.body.level || "Umum"; 
+    const type = req.body.type || "Pilihan Ganda"; 
 
     // 4. Siapkan Prompt yang Sopan & Profesional
     let prompt = `Anda adalah pakar pembuat soal ujian profesional. 
@@ -84,14 +84,13 @@ router.post("/generate", upload.single("image"), async (req, res) => {
 
     let parts = [prompt];
 
-    // Jika ada file gambar (OCR mode)
     if (req.file) {
       const imagePart = fileToGenerativePart(req.file.path, req.file.mimetype);
       parts.push(imagePart);
       prompt += `\n\nAnalisis materi dari gambar yang dilampirkan untuk membuat soal tersebut.`;
     }
 
-    // 5. Eksekusi Gemini
+    // 5. Eksekusi Gemini (Model 2.5 Flash)
     const result = await model.generateContent(parts);
     const response = await result.response;
     const fullContent = response.text();
@@ -114,7 +113,6 @@ router.post("/generate", upload.single("image"), async (req, res) => {
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [userId, teksSoal, teksJawaban],
       function (err) {
-        // Hapus file fisik segera setelah diproses
         if (req.file && fs.existsSync(req.file.path)) {
           fs.unlinkSync(req.file.path);
         }
@@ -125,7 +123,6 @@ router.post("/generate", upload.single("image"), async (req, res) => {
         }
 
         // 8. Respon Sukses
-        // Mengirimkan hasil yang rapi untuk ditampilkan di 'outputContent' dashboard
         res.json({
           success: true,
           result: `
@@ -146,17 +143,15 @@ router.post("/generate", upload.single("image"), async (req, res) => {
 
   } catch (err) {
     console.error("Gemini AI Error:", err);
-    // Hapus file jika terjadi error agar tidak menumpuk
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ success: false, error: "Terjadi kesalahan pada sistem AI kami. Mohon coba lagi." });
+    res.status(500).json({ success: false, error: "Terjadi kesalahan pada sistem AI kami." });
   }
 });
 
-// --- TAMBAHAN FITUR HISTORY PER AKUN ---
+// --- FITUR HISTORY PER AKUN ---
 
-// 1. Ambil List History (Hanya milik user yang login)
 router.get("/history", (req, res) => {
   if (!req.session.user) return res.status(401).json({ success: false });
 
@@ -171,7 +166,6 @@ router.get("/history", (req, res) => {
   );
 });
 
-// 2. Ambil Detail History Berdasarkan ID (Hanya jika milik user yang login)
 router.get("/history/:id", (req, res) => {
   if (!req.session.user) return res.status(401).json({ success: false });
 
