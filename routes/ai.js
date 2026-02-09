@@ -2,17 +2,30 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const db = require("../db");
-const Groq = require("groq-sdk");
+const db = require("../db"); // Pastikan path ke db.js benar
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const router = express.Router();
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Konfigurasi Penyimpanan Gambar
+// 1. Inisialisasi Gemini 2.5 Flash
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+// Konfigurasi Penyimpanan Gambar Sementara
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const upload = multer({ dest: uploadDir });
+
+// Fungsi helper untuk mengubah file ke format yang dimengerti Gemini
+function fileToGenerativePart(path, mimeType) {
+  return {
+    inlineData: {
+      data: Buffer.from(fs.readFileSync(path)).toString("base64"),
+      mimeType,
+    },
+  };
+}
 
 router.post("/process", upload.array("foto", 5), async (req, res) => {
   try {
@@ -24,7 +37,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const userId = req.session.user.id;
     const userRole = req.session.user.role; 
 
-    // 2. Logika Limit (Hanya untuk role 'user')
+    // 2. Logika Limit Harian (Hanya untuk role 'user')
     if (userRole === 'user') {
       const today = new Date().toISOString().split('T')[0];
       const checkLimit = await new Promise((resolve) => {
@@ -42,7 +55,7 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       }
     }
 
-    // 3. Validasi Input
+    // 3. Validasi Input Gambar
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "Mohon upload minimal 1 gambar materi." });
     }
@@ -50,51 +63,30 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     const jumlahDiminta = req.body.jumlah || 5;
     const jenisSoal = req.body.jenis || "PG";
 
-    // 4. Menyusun Payload Multimodal untuk Llama 4 Scout
-    const contentPayload = [
-      { 
-        type: "text", 
-        text: `Tugas: Analisis materi dari gambar yang diberikan. 
-               Buat TEPAT ${jumlahDiminta} soal dalam bentuk ${jenisSoal}.
-               
-               STRUKTUR OUTPUT WAJIB:
-               1. Tulis daftar soal lengkap.
-               2. Tulis pemisah ini: ###BATAS_AKHIR_SOAL###
-               3. Tulis Kunci Jawaban di bawah pemisah tersebut.`
-      }
-    ];
+    // 4. Siapkan Prompt dan Gambar untuk Gemini 2.5 Flash
+    const prompt = `Kamu adalah AutoSoal AI buatan Te Az Ha. 
+    Analisis materi dari gambar yang diberikan secara teliti.
+    Buat TEPAT ${jumlahDiminta} soal dalam bentuk ${jenisSoal}.
+    
+    STRUKTUR OUTPUT WAJIB:
+    1. Tulis daftar soal lengkap.
+    2. Tulis pemisah ini: ###BATAS_AKHIR_SOAL###
+    3. Tulis Kunci Jawaban di bawah pemisah tersebut.`;
 
-    // Mengonversi setiap gambar ke Base64 agar Llama 4 bisa "melihat"
-    req.files.forEach(file => {
-      const base64Image = fs.readFileSync(file.path, { encoding: 'base64' });
-      contentPayload.push({
-        type: "image_url",
-        image_url: { url: `data:image/jpeg;base64,${base64Image}` }
-      });
-    });
+    // Mengonversi file upload ke format part Gemini
+    const imageParts = req.files.map(file => 
+      fileToGenerativePart(file.path, file.mimetype)
+    );
 
-    // 5. Memanggil API Groq dengan Model Llama 4 Scout
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { 
-          role: "system", 
-          content: "Kamu adalah AutoSoal AI buatan Te Az Ha, asisten cerdas yang mahir menganalisis materi visual dan membuat soal ujian berkualitas." 
-        },
-        { 
-          role: "user", 
-          content: contentPayload 
-        }
-      ],
-      model: "meta-llama/llama-4-scout-17b-16e-instruct", 
-      temperature: 0.6,
-      max_tokens: 4096,
-    });
+    // 5. Eksekusi Gemini 2.5 Flash
+    const result = await model.generateContent([prompt, ...imageParts]);
+    const response = await result.response;
+    const fullContent = response.text();
 
-    const fullContent = completion.choices[0]?.message?.content || "";
     let teksSoal = "";
     let teksJawaban = "";
 
-    // 6. Memisahkan Soal dan Jawaban berdasarkan separator
+    // 6. Pemisahan Soal dan Jawaban
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
         const parts = fullContent.split("###BATAS_AKHIR_SOAL###");
         teksSoal = parts[0].trim();
@@ -110,17 +102,17 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [userId, teksSoal, teksJawaban],
       function (err) {
-        if (err) {
-          console.error(err);
-          return res.status(500).json({ error: "Gagal menyimpan riwayat ke database." });
-        }
-
-        // Hapus file sementara setelah diproses
+        // Hapus file sementara dari folder uploads agar hemat ruang
         req.files.forEach(file => {
           if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         });
 
-        // 8. Kirim Respon Sukses ke Dashboard
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ error: "Gagal menyimpan ke database." });
+        }
+
+        // 8. Respon Sukses
         res.json({
           success: true,
           soal: teksSoal,
@@ -131,8 +123,8 @@ router.post("/process", upload.array("foto", 5), async (req, res) => {
     );
 
   } catch (err) {
-    console.error("AI Error:", err);
-    res.status(500).json({ error: "Terjadi kesalahan pada sistem Llama 4 Scout." });
+    console.error("Gemini AI Error:", err);
+    res.status(500).json({ error: "Terjadi kesalahan pada sistem Gemini 2.5 Flash." });
   }
 });
 
