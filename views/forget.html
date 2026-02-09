@@ -20,7 +20,7 @@
 
     <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.07)] border border-gray-50 w-full max-w-[400px] p-10">
         
-        <h2 class="text-center text-blue-600 font-bold tracking-widest text-xs mb-8 uppercase">
+        <h2 class="text-center text-blue-600 font-bold tracking-widest text-[11px] mb-8 uppercase">
             Pemulihan Akun
         </h2>
         
@@ -31,13 +31,14 @@
             </div>
             
             <button type="submit" id="btnForgot" 
-                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-sm tracking-widest">
+                class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest">
                 Kirim Link Reset
             </button>
         </form>
         
-        <div class="mt-8 text-center">
-            <a href="/login" class="text-[11px] text-blue-600 font-bold hover:underline">Kembali Login</a>
+        <div class="flex justify-between mt-8 px-2">
+            <span class="text-[10px] text-gray-300 font-medium">Lupa?</span>
+            <a href="login.html" class="text-[10px] text-blue-600 font-bold hover:underline">Kembali Login</a>
         </div>
     </div>
 
@@ -53,7 +54,7 @@
             const btn = document.getElementById('btnForgot');
             const email = document.getElementById('resetEmail').value;
 
-            // Animasi Loading
+            // Efek Loading sesuai gambar
             btn.innerHTML = '⏳ TUNGGU SEBENTAR...';
             btn.disabled = true;
 
@@ -67,8 +68,8 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Link reset telah dikirim! Silakan cek email kamu.');
-                    window.location.href = '/login'; 
+                    alert('Berhasil! Cek email kamu (Brevo API telah mengirim link).');
+                    window.location.href = 'login.html'; 
                 } else {
                     alert('Gagal: ' + data.error);
                     btn.innerHTML = 'Kirim Link Reset';
