@@ -27,13 +27,13 @@
 
         <form id="forgotForm" class="space-y-6">
             <div>
-                <input type="email" id="resetEmail" placeholder="hafizyazhar@gmail.com" 
+                <input type="email" id="resetEmail" placeholder="Masukkan Email Anda" 
                     class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-blue-400 outline-none transition-all font-medium" required>
             </div>
             
             <button type="submit" id="btnForgot" 
                 class="w-full bg-[#0d1117] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 uppercase text-xs tracking-widest">
-                Kirim Link Reset
+                Kirim Kode OTP
             </button>
         </form>
 
@@ -48,10 +48,11 @@
             const btn = document.getElementById('btnForgot');
             const email = document.getElementById('resetEmail').value;
 
-            btn.innerHTML = '⏳ MENGIRIM...';
+            btn.innerHTML = '⏳ MENGIRIM KODE...';
             btn.disabled = true;
 
             try {
+                // Begitu diklik, langsung kirim email ke alamat tertulis
                 const response = await fetch('/auth/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -61,16 +62,16 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert('Link reset password telah dikirim ke email kamu!');
-                    window.location.href = '/';
+                    alert('Sukses! Periksa kotak masuk email kamu untuk melihat kode OTP.');
+                    // Kamu bisa arahkan ke halaman verifikasi OTP di sini
                 } else {
                     alert('Gagal: ' + data.error);
-                    btn.innerText = 'Kirim Link Reset';
+                    btn.innerText = 'Kirim Kode OTP';
                     btn.disabled = false;
                 }
             } catch (err) {
-                alert('Koneksi server terputus');
-                btn.innerText = 'Kirim Link Reset';
+                alert('Terjadi kesalahan koneksi.');
+                btn.innerText = 'Kirim Kode OTP';
                 btn.disabled = false;
             }
         };
