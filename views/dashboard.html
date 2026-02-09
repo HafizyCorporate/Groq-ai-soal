@@ -17,11 +17,12 @@
             color: #1a1a1a;
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
         }
-        .prose { line-height: 1.6; }
+        .prose { line-height: 1.7; color: #374151; }
+        .prose h1, .prose h2 { font-weight: 800; color: #111827; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -30,66 +31,73 @@
         <h1 class="text-3xl font-[900] italic tracking-tighter">
             SOAL <span class="text-blue-600">AI</span>
         </h1>
-        <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all">
-            Logout
-        </button>
+        <div class="flex items-center gap-4">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Panel Dasbor Pengajar</span>
+            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
+                Keluar
+            </button>
+        </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-6 py-8">
+        <div class="mb-10">
+            <h2 class="text-4xl font-black tracking-tight mb-2">Selamat Datang Bapak/Ibu Guru! 👋</h2>
+            <p class="text-gray-500 font-medium">Mari susun soal ujian berkualitas dengan bantuan teknologi kecerdasan buatan.</p>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
             <div class="lg:col-span-1 space-y-6">
-                <div class="glass-card p-8 rounded-[40px] shadow-sm">
-                    <h3 class="text-blue-600 font-black text-xs uppercase tracking-widest mb-6">Konfigurasi Soal</h3>
+                <div class="glass-card p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
+                    <h3 class="text-blue-600 font-black text-xs uppercase tracking-[0.2em] mb-6">Konfigurasi Soal</h3>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-5">
                         <div>
-                            <label class="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">Mata Pelajaran</label>
-                            <input type="text" id="subject" placeholder="Contoh: Biologi" 
-                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-400 transition-all">
+                            <label class="text-[11px] font-black uppercase text-gray-400 ml-2 mb-2 block">Mata Pelajaran</label>
+                            <input type="text" id="subject" placeholder="Misal: Ilmu Pengetahuan Alam" 
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-semibold focus:ring-2 focus:ring-blue-400 transition-all">
                         </div>
 
                         <div>
-                            <label class="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">Tingkat Kesulitan (Jenjang)</label>
-                            <select id="level" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer">
+                            <label class="text-[11px] font-black uppercase text-gray-400 ml-2 mb-2 block">Jenjang & Tingkat Kelas</label>
+                            <select id="level" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-semibold focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer">
                                 <optgroup label="Sekolah Dasar (SD)">
-                                    <option value="SD Kelas 1-3">SD Kelas 1-3 (Mudah)</option>
-                                    <option value="SD Kelas 4-6">SD Kelas 4-6 (Sedang)</option>
+                                    <option value="SD Kelas 1-3">SD Kelas 1, 2, 3</option>
+                                    <option value="SD Kelas 4-6">SD Kelas 4, 5, 6</option>
                                 </optgroup>
                                 <optgroup label="Sekolah Menengah Pertama (SMP)">
-                                    <option value="SMP Kelas 7-9">SMP Kelas 7-9</option>
+                                    <option value="SMP Kelas 7-9">SMP Kelas 7, 8, 9</option>
                                 </optgroup>
                                 <optgroup label="Sekolah Menengah Atas (SMA)">
-                                    <option value="SMA Kelas 10-12">SMA Kelas 10-12 (Sulit/HOTS)</option>
+                                    <option value="SMA Kelas 10-12">SMA Kelas 10, 11, 12</option>
                                 </optgroup>
                             </select>
                         </div>
 
                         <div>
-                            <label class="text-[10px] font-black uppercase text-gray-400 ml-2 mb-2 block">Jumlah Soal</label>
-                            <input type="number" id="count" value="5" min="1" max="15" 
-                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-400 transition-all">
+                            <label class="text-[11px] font-black uppercase text-gray-400 ml-2 mb-2 block">Jumlah Soal</label>
+                            <input type="number" id="count" placeholder="Maksimal 15" value="5"
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-700 outline-none font-semibold focus:ring-2 focus:ring-blue-400 transition-all">
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="handleCamera()" class="flex flex-col items-center justify-center gap-2 bg-blue-50 text-blue-600 p-4 rounded-3xl hover:bg-blue-600 hover:text-white transition-all border border-blue-100">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <span class="text-[9px] font-black uppercase">Ambil Foto</span>
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <button onclick="handleCamera()" class="flex flex-col items-center justify-center gap-2 bg-blue-50 text-blue-600 p-4 rounded-3xl hover:bg-blue-600 hover:text-white transition-all border border-blue-100 group">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                <span class="text-[10px] font-black uppercase tracking-tighter">Kamera</span>
                             </button>
-                            <label class="flex flex-col items-center justify-center gap-2 bg-purple-50 text-purple-600 p-4 rounded-3xl hover:bg-purple-600 hover:text-white transition-all border border-purple-100 cursor-pointer text-center">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                <span class="text-[9px] font-black uppercase tracking-tighter">Unggah File</span>
+                            
+                            <label class="flex flex-col items-center justify-center gap-2 bg-purple-50 text-purple-600 p-4 rounded-3xl hover:bg-purple-600 hover:text-white transition-all border border-purple-100 cursor-pointer">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="text-[10px] font-black uppercase tracking-tighter text-center">Lampiran File</span>
                                 <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)">
                             </label>
                         </div>
 
-                        <hr class="border-gray-100 my-4">
-
-                        <div class="space-y-3">
-                            <button onclick="generateSoal('Pilihan Ganda')" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all active:scale-95 uppercase text-xs tracking-widest">
+                        <div class="pt-4 space-y-3">
+                            <button onclick="generateSoal('Pilihan Ganda')" class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95 uppercase text-[11px] tracking-widest">
                                 Buat Pilihan Ganda
                             </button>
-                            <button onclick="generateSoal('Essay')" class="w-full bg-white text-blue-600 border-2 border-blue-600 font-black py-4 rounded-2xl hover:bg-blue-50 transition-all active:scale-95 uppercase text-xs tracking-widest">
+                            <button onclick="generateSoal('Essay')" class="w-full bg-white text-blue-600 border-2 border-blue-600 font-black py-5 rounded-2xl hover:bg-blue-50 transition-all active:scale-95 uppercase text-[11px] tracking-widest">
                                 Buat Soal Essay
                             </button>
                         </div>
@@ -98,18 +106,23 @@
             </div>
 
             <div class="lg:col-span-2">
-                <div id="resultArea" class="glass-card min-h-[600px] p-10 rounded-[40px] shadow-sm relative">
+                <div id="resultArea" class="glass-card min-h-[600px] p-10 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative">
+                    
                     <div id="exportToolbar" class="hidden flex justify-end gap-3 mb-8">
-                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-black transition-all">PDF</button>
-                        <button onclick="exportToWord()" class="bg-blue-50 text-blue-600 px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-100 transition-all">Word</button>
+                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-md">
+                            Unduh PDF
+                        </button>
+                        <button onclick="exportToWord()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">
+                            Unduh Word
+                        </button>
                     </div>
 
                     <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
-                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.364-6.364l-.707-.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M12 18v3m-3-4.5a3.5 3.5 0 117 0c0 1.25-.5 2.5-1.5 3.5s-1.5 2.25-1.5 3.5"></path></svg>
+                        <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         </div>
-                        <h4 class="text-lg font-bold">Siap Membuat Soal?</h4>
-                        <p class="text-gray-400 text-xs max-w-xs mx-auto mt-2">Pilih jenjang sekolah dan jenis soal untuk memulai pembuatan soal otomatis.</p>
+                        <h4 class="text-xl font-extrabold mb-2">Hasil Soal Akan Muncul di Sini</h4>
+                        <p class="text-gray-400 text-sm max-w-sm">Silakan lengkapi konfigurasi di samping dan klik tombol generate untuk melihat draf soal ujian Anda.</p>
                     </div>
                     
                     <div id="outputContent" class="hidden"></div>
@@ -119,11 +132,19 @@
     </main>
 
     <script>
-        function handleCamera() { document.getElementById('fileInput').click(); }
+        function handleCamera() {
+            document.getElementById('fileInput').click();
+        }
 
         function handleFile(input) {
-            if (input.files[0]) {
-                Swal.fire({ icon: 'success', title: 'Gambar Siap!', text: input.files[0].name, showConfirmButton: false, timer: 1500 });
+            if (input.files && input.files[0]) {
+                Swal.fire({
+                    title: 'File Berhasil Diunggah',
+                    text: `Siap memproses: ${input.files[0].name}`,
+                    icon: 'success',
+                    confirmButtonColor: '#0d1117',
+                    borderRadius: '25px'
+                });
             }
         }
 
@@ -133,25 +154,37 @@
             const level = document.getElementById('level').value;
             const fileInput = document.getElementById('fileInput');
 
-            if(!subject) return Swal.fire({ icon: 'error', title: 'Subjek Kosong', text: 'Tuliskan mata pelajaran dulu ya!' });
+            if(!subject || !count) {
+                return Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Mohon Maaf', 
+                    text: 'Pastikan Mata Pelajaran dan Jumlah Soal sudah terisi dengan benar.',
+                    borderRadius: '25px'
+                });
+            }
 
             const formData = new FormData();
             formData.append('subject', subject);
             formData.append('count', count);
-            formData.append('level', level); // SD/SMP/SMA
-            formData.append('type', type);   // PG/Essay
+            formData.append('level', level);
+            formData.append('type', type);
             
-            if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+            if (fileInput.files[0]) {
+                formData.append('image', fileInput.files[0]);
+            }
 
             Swal.fire({
-                title: 'Menyusun Soal...',
-                html: `Level: <b>${level}</b> | Jenis: <b>${type}</b>`,
+                title: 'Mohon Tunggu Sebentar',
+                html: `Kecerdasan Buatan sedang menyusun soal <b>${type}</b> untuk jenjang <b>${level}</b>...`,
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading() }
             });
 
             try {
-                const response = await fetch('/ai/generate', { method: 'POST', body: formData });
+                const response = await fetch('/ai/generate', {
+                    method: 'POST',
+                    body: formData 
+                });
                 const data = await response.json();
 
                 if(data.success) {
@@ -160,31 +193,75 @@
                     document.getElementById('exportToolbar').classList.remove('hidden');
                     const output = document.getElementById('outputContent');
                     output.classList.remove('hidden');
-                    output.innerHTML = `<div id="printableArea" class="prose max-w-none font-medium text-gray-800">${data.result}</div>`;
+                    output.innerHTML = `<div id="printableArea" class="prose max-w-none">${data.result}</div>`;
+                    
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: 'Berhasil!', 
+                        text: 'Draf soal telah selesai dibuat.', 
+                        timer: 2000, 
+                        showConfirmButton: false 
+                    });
                 } else {
-                    Swal.fire({ icon: 'warning', title: 'Limit Habis', text: data.error });
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: 'Mohon Maaf', 
+                        text: data.error || 'Terjadi kendala saat memproses data.', 
+                        borderRadius: '25px' 
+                    });
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Oops!', text: 'Gagal terhubung ke AI.' });
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Gangguan Sistem', 
+                    text: 'Gagal terhubung ke layanan AI.', 
+                    borderRadius: '25px' 
+                });
             }
         }
 
         function exportToPDF() {
             const element = document.getElementById('printableArea');
-            html2pdf().set({ margin: 1, filename: 'Soal_AI.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(element).save();
+            const subject = document.getElementById('subject').value || 'Soal_AI';
+            const opt = {
+                margin: 0.8,
+                filename: `Soal_${subject}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            Swal.fire({ title: 'Menyiapkan Dokumen PDF...', didOpen: () => Swal.showLoading(), timer: 1000 });
+            html2pdf().set(opt).from(element).save();
         }
 
         function exportToWord() {
+            const subject = document.getElementById('subject').value || 'Soal_AI';
             const content = document.getElementById('printableArea').innerHTML;
-            const converted = htmlDocx.asBlob(`<!DOCTYPE html><html><body>${content}</body></html>`);
+            const htmlString = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${content}</body></html>`;
+            const converted = htmlDocx.asBlob(htmlString);
             const link = document.createElement('a');
             link.href = URL.createObjectURL(converted);
-            link.download = 'Soal_AI.docx';
+            link.download = `Soal_${subject}.docx`;
+            Swal.fire({ title: 'Menyiapkan Dokumen Word...', didOpen: () => Swal.showLoading(), timer: 1000 });
             link.click();
         }
 
         function confirmLogout() {
-            Swal.fire({ title: 'Keluar?', text: "Sesi anda akan berakhir.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#0d1117', confirmButtonText: 'YA' }).then((r) => { if (r.isConfirmed) window.location.href = '/auth/logout'; });
+            Swal.fire({
+                title: 'Apakah Anda Yakin?',
+                text: "Sesi kerja Anda saat ini akan diakhiri.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0d1117',
+                cancelButtonColor: '#f3f4f6',
+                confirmButtonText: 'Ya, Keluar',
+                cancelButtonText: '<span style="color: #9ca3af">Batal</span>',
+                borderRadius: '25px'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/auth/logout';
+                }
+            })
         }
     </script>
 </body>
