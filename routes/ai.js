@@ -28,7 +28,8 @@ function fileToGenerativePart(path, mimeType) {
 }
 
 // Rute utama /ai/generate
-router.post("/generate", upload.single("image"), async (req, res) => {
+// RUBAH: Dari upload.single("image") menjadi upload.array("images[]", 10)
+router.post("/generate", upload.array("images[]", 10), async (req, res) => {
   try {
     // 1. Validasi Sesi Login
     if (!req.session.user) {
@@ -84,13 +85,16 @@ router.post("/generate", upload.single("image"), async (req, res) => {
 
     let parts = [prompt];
 
-    if (req.file) {
-      const imagePart = fileToGenerativePart(req.file.path, req.file.mimetype);
-      parts.push(imagePart);
-      prompt += `\n\nAnalisis materi dari gambar yang dilampirkan untuk membuat soal tersebut.`;
+    // 5. RUBAH: Logika pengolahan file (Multiple)
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        parts.push(fileToGenerativePart(file.path, file.mimetype));
+      });
+      prompt += `\n\nAnalisis materi dari ${req.files.length} gambar yang dilampirkan untuk membuat soal tersebut.`;
+      parts[0] = prompt; // Update prompt utama di index pertama
     }
 
-    // 5. Eksekusi Gemini (Model 2.5 Flash)
+    // 6. Eksekusi Gemini (Model 2.5 Flash)
     const result = await model.generateContent(parts);
     const response = await result.response;
     const fullContent = response.text();
@@ -98,7 +102,7 @@ router.post("/generate", upload.single("image"), async (req, res) => {
     let teksSoal = "";
     let teksJawaban = "";
 
-    // 6. Pemisahan Soal dan Jawaban
+    // 7. Pemisahan Soal dan Jawaban
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
         const splitParts = fullContent.split("###BATAS_AKHIR_SOAL###");
         teksSoal = splitParts[0].trim();
@@ -108,13 +112,16 @@ router.post("/generate", upload.single("image"), async (req, res) => {
         teksJawaban = "Kunci jawaban terlampir di dalam teks soal.";
     }
 
-    // 7. Simpan ke Database
+    // 8. Simpan ke Database
     db.run(
       "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
       [userId, teksSoal, teksJawaban],
       function (err) {
-        if (req.file && fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
+        // RUBAH: Hapus semua file yang diupload (req.files)
+        if (req.files) {
+          req.files.forEach(file => {
+            if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+          });
         }
 
         if (err) {
@@ -122,7 +129,7 @@ router.post("/generate", upload.single("image"), async (req, res) => {
           return res.status(500).json({ success: false, error: "Gagal menyimpan riwayat soal ke database." });
         }
 
-        // 8. Respon Sukses
+        // 9. Respon Sukses
         res.json({
           success: true,
           result: `
@@ -143,15 +150,17 @@ router.post("/generate", upload.single("image"), async (req, res) => {
 
   } catch (err) {
     console.error("Gemini AI Error:", err);
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    // RUBAH: Pastikan semua file dihapus jika error
+    if (req.files) {
+      req.files.forEach(file => {
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      });
     }
     res.status(500).json({ success: false, error: "Terjadi kesalahan pada sistem AI kami." });
   }
 });
 
-// --- FITUR HISTORY PER AKUN ---
-
+// --- FITUR HISTORY PER AKUN (TIDAK BERUBAH) ---
 router.get("/history", (req, res) => {
   if (!req.session.user) return res.status(401).json({ success: false });
 
