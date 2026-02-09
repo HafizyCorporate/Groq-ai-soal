@@ -6,6 +6,9 @@
     <title>Dashboard - SOAL AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         body { 
@@ -18,6 +21,9 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
+        /* Menyesuaikan tampilan hasil agar rapi saat diekspor */
+        .prose { line-height: 1.6; }
+        .prose p { margin-bottom: 1rem; }
     </style>
 </head>
 <body class="min-h-screen">
@@ -66,6 +72,16 @@
 
             <div class="lg:col-span-2">
                 <div id="resultArea" class="glass-card min-h-[500px] p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative">
+                    
+                    <div id="exportToolbar" class="hidden flex justify-end gap-2 mb-6">
+                        <button onclick="exportToPDF()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">
+                            Unduh PDF
+                        </button>
+                        <button onclick="exportToWord()" class="bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-green-700 transition-all shadow-md">
+                            Unduh Word
+                        </button>
+                    </div>
+
                     <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
                         <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                             <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
@@ -75,14 +91,13 @@
                     </div>
                     
                     <div id="outputContent" class="hidden space-y-6">
-                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        // Notifikasi Logout Keren
         function confirmLogout() {
             Swal.fire({
                 title: 'Ingin Keluar?',
@@ -104,13 +119,11 @@
         async function generateSoal() {
             const subject = document.getElementById('subject').value;
             const count = document.getElementById('count').value;
-            const btn = document.getElementById('btnGenerate');
 
             if(!subject || !count) {
                 return Swal.fire({ icon: 'error', title: 'Data Kurang', text: 'Mohon isi subjek dan jumlah soal.', borderRadius: '30px' });
             }
 
-            // Notifikasi Loading Modern
             Swal.fire({
                 title: 'Sedang Memproses',
                 html: 'Gemini AI sedang menyusun soal untukmu...',
@@ -129,15 +142,55 @@
                 if(data.success) {
                     Swal.close();
                     document.getElementById('placeholder').classList.add('hidden');
+                    document.getElementById('exportToolbar').classList.remove('hidden');
                     const output = document.getElementById('outputContent');
                     output.classList.remove('hidden');
-                    output.innerHTML = `<div class="prose max-w-none font-medium text-gray-700">${data.result}</div>`;
+                    output.innerHTML = `<div id="printableArea" class="prose max-w-none font-medium text-gray-700">${data.result}</div>`;
                     
                     Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Soal berhasil dibuat.', timer: 2000, showConfirmButton: false });
                 }
             } catch (err) {
                 Swal.fire({ icon: 'error', title: 'Gangguan Sistem', text: 'Gagal terhubung ke AI.' });
             }
+        }
+
+        // Fungsi Ekspor PDF
+        function exportToPDF() {
+            const element = document.getElementById('printableArea');
+            const subject = document.getElementById('subject').value || 'Soal_AI';
+            const opt = {
+                margin: 1,
+                filename: `${subject}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            
+            Swal.fire({ title: 'Mengunduh PDF...', timer: 1000, didOpen: () => Swal.showLoading() });
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // Fungsi Ekspor Word
+        function exportToWord() {
+            const subject = document.getElementById('subject').value || 'Soal_AI';
+            const content = document.getElementById('printableArea').innerHTML;
+            
+            // Template HTML sederhana untuk Word
+            const htmlString = `
+                <!DOCTYPE html>
+                <html>
+                <head><meta charset="utf-8"></head>
+                <body>${content}</body>
+                </html>
+            `;
+            
+            const converted = htmlDocx.asBlob(htmlString);
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(converted);
+            link.download = `${subject}.docx`;
+            
+            Swal.fire({ title: 'Mengunduh Word...', timer: 1000, didOpen: () => Swal.showLoading() });
+            link.click();
         }
     </script>
 </body>
