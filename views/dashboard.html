@@ -22,41 +22,49 @@
             border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
-        /* PERUBAHAN: Area Review Lebih Tinggi */
+        /* --- PERBAIKAN JENDELA PREVIEW --- */
         #outputContent {
             max-height: 850px;
             overflow-y: auto;
-            padding-right: 10px;
+            overflow-x: hidden;
+            padding: 5px;
             scrollbar-width: thin;
             scrollbar-color: #2563eb #f8faff;
+            width: 100%;
         }
 
         #outputContent::-webkit-scrollbar { width: 6px; }
         #outputContent::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* PERUBAHAN: Desain Naskah & Spasi Antar Soal */
         .naskah-ujian {
             font-family: 'Times New Roman', Times, serif !important;
             color: black !important;
             background: white;
-            padding: 50px;
+            padding: 30px;
             border: 1px solid #e5e7eb;
-            font-size: 13pt !important;
-            line-height: 1.5;
+            font-size: 12pt !important;
+            line-height: 1.6;
             width: 100%;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-sizing: border-box;
         }
 
-        /* Memberikan jarak otomatis antar nomor soal */
         .naskah-ujian p, .naskah-ujian div {
             margin-bottom: 25px !important; 
+            text-align: justify;
         }
 
-        /* Merapikan pilihan ganda agar tidak terlalu rapat */
         .naskah-ujian br {
             content: "";
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             display: block;
+        }
+
+        @media (min-width: 1024px) {
+            .naskah-ujian {
+                padding: 60px;
+                font-size: 13pt !important;
+            }
         }
     </style>
 </head>
@@ -128,8 +136,8 @@
                                 <span class="text-[11px] font-black uppercase tracking-tighter text-center">Lampiran File</span>
                             </label>
 
-                            <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFile(this)">
-                            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)">
+                            <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFile(this)" multiple>
+                            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)" multiple>
                         </div>
 
                         <div class="pt-4 space-y-3">
@@ -166,16 +174,29 @@
     </main>
 
     <script>
-        // FUNGSI KAMERA (TIDAK BERUBAH)
         function handleCamera() {
             document.getElementById('cameraInput').click();
         }
 
+        // PERBAIKAN: Fungsi handleFile dengan limit 10 file
         function handleFile(input) {
-            if (input.files && input.files[0]) {
+            const maxFiles = 10;
+            if (input.files && input.files.length > 0) {
+                if (input.files.length > maxFiles) {
+                    Swal.fire({
+                        title: 'Mohon Maaf',
+                        text: `Hanya diperbolehkan maksimal ${maxFiles} foto/file.`,
+                        icon: 'warning',
+                        confirmButtonColor: '#0d1117',
+                        borderRadius: '25px'
+                    });
+                    input.value = ""; // Menghapus file yang terpilih agar tidak lanjut proses
+                    return;
+                }
+                
                 Swal.fire({
                     title: 'Berhasil!',
-                    text: `File/Foto siap diproses: ${input.files[0].name}`,
+                    text: `${input.files.length} File/Foto siap diproses.`,
                     icon: 'success',
                     confirmButtonColor: '#0d1117',
                     borderRadius: '25px'
@@ -188,9 +209,11 @@
             const count = document.getElementById('count').value;
             const level = document.getElementById('level').value;
             
-            const camFile = document.getElementById('cameraInput').files[0];
-            const regularFile = document.getElementById('fileInput').files[0];
-            const fileToSend = camFile || regularFile;
+            const camFiles = document.getElementById('cameraInput').files;
+            const regularFiles = document.getElementById('fileInput').files;
+            
+            // Gabungkan atau pilih salah satu sumber file
+            const filesToSend = camFiles.length > 0 ? camFiles : regularFiles;
 
             if(!subject || !count) {
                 return Swal.fire({ 
@@ -206,7 +229,11 @@
             formData.append('count', count);
             formData.append('level', level);
             formData.append('type', type);
-            if (fileToSend) formData.append('image', fileToSend);
+            
+            // Masukkan semua file yang terpilih ke formData
+            for (let i = 0; i < filesToSend.length; i++) {
+                formData.append('images[]', filesToSend[i]);
+            }
 
             Swal.fire({
                 title: 'Mohon Tunggu Sebentar',
@@ -264,7 +291,6 @@
             }
         }
 
-        // FUNGSI EXPORT (TIDAK BERUBAH)
         function exportToPDF() {
             const element = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
