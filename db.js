@@ -24,45 +24,55 @@ if (process.env.DATABASE_URL) {
     }
   };
 
-  // --- INISIALISASI TABEL & KOLOM TOKEN ---
-  const initQueries = `
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username TEXT UNIQUE,
-      email TEXT UNIQUE,
-      password TEXT,
-      role TEXT DEFAULT 'user',
-      tokens INTEGER DEFAULT 10
-    );
-    
-    -- Tambahkan kolom tokens jika tabel users sudah ada sebelumnya
-    DO $$ 
-    BEGIN 
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='tokens') THEN
-        ALTER TABLE users ADD COLUMN tokens INTEGER DEFAULT 10;
-      END IF;
-    END $$;
+  // --- INISIALISASI DATABASE ASYNC ---
+  async function initDatabase() {
+    try {
+      // 1. Buat Tabel & Kolom secara berurutan
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username TEXT UNIQUE,
+          email TEXT UNIQUE,
+          password TEXT,
+          role TEXT DEFAULT 'user',
+          tokens INTEGER DEFAULT 10
+        );
+      `);
 
-    CREATE TABLE IF NOT EXISTS history (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER,
-      soal TEXT,
-      jawaban TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
+      await pool.query(`
+        DO $$ 
+        BEGIN 
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='tokens') THEN
+            ALTER TABLE users ADD COLUMN tokens INTEGER DEFAULT 10;
+          END IF;
+        END $$;
+      `);
 
-  pool.query(initQueries)
-    .then(() => {
-      console.log("PostgreSQL: Tabel & Sistem Token Siap.");
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS history (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          soal TEXT,
+          jawaban TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // 2. Pastikan Admin Versacy terdaftar dengan token penuh
       const adminQuery = `
         INSERT INTO users (username, password, role, tokens) 
         VALUES ('Versacy', '08556545', 'admin', 9999) 
-        ON CONFLICT (username) DO UPDATE SET role = 'admin';
+        ON CONFLICT (username) DO UPDATE SET role = 'admin', tokens = 9999;
       `;
-      return pool.query(adminQuery);
-    })
-    .catch(err => console.error("PostgreSQL Init Error:", err));
+      await pool.query(adminQuery);
+      
+      console.log("PostgreSQL: Tabel & Admin Versacy Berhasil Disiapkan.");
+    } catch (err) {
+      console.error("PostgreSQL Init Error:", err);
+    }
+  }
+
+  initDatabase();
 
 } else {
   // --- MODE SQLITE (LOKAL) ---
@@ -71,18 +81,11 @@ if (process.env.DATABASE_URL) {
   db = new sqlite3.Database(dbPath);
   
   db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT, 
-      username TEXT UNIQUE, 
-      email TEXT UNIQUE, 
-      password TEXT, 
-      role TEXT DEFAULT 'user',
-      tokens INTEGER DEFAULT 10
-    )`);
-    // Pastikan kolom token ada di sqlite lokal juga
+    db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'user', tokens INTEGER DEFAULT 10)`);
     db.run("ALTER TABLE users ADD COLUMN tokens INTEGER DEFAULT 10", (err) => {});
     db.run(`CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, soal TEXT, jawaban TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
   });
+  console.log("Menggunakan SQLite (Mode Lokal).");
 }
 
 module.exports = db;
