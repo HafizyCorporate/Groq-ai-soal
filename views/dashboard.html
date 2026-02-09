@@ -299,14 +299,39 @@
         }
 
         function exportToWord() {
+            const element = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
-            const content = document.getElementById('printableArea').innerHTML;
-            const htmlString = `<html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 13pt; } table { border-collapse: collapse; width: 100%; } p { margin-bottom: 20px; }</style></head><body>${content}</body></html>`;
+
+            if (!element) {
+                return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
+            }
+
+            const content = element.innerHTML;
+            const htmlString = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <style>
+                        body { font-family: "Times New Roman", serif; font-size: 12pt; }
+                        table { border-collapse: collapse; width: 100%; border: 1px solid black; }
+                        td { border: 1px solid black; padding: 5px; }
+                        p { margin-bottom: 15px; text-align: justify; }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                </body>
+                </html>
+            `;
+
             const converted = htmlDocx.asBlob(htmlString);
             const link = document.createElement('a');
             link.href = URL.createObjectURL(converted);
-            link.download = `Naskah_Soal_${subject}.docx`;
+            link.download = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
 
         function confirmLogout() {
