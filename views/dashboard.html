@@ -448,7 +448,7 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        /* PERBAIKAN: Fungsi Export Word untuk deteksi kunci jawaban yang lebih akurat */
+        /* PERBAIKAN: Fungsi Export Word dengan hapus kata token dan tambah nomor halaman */
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
@@ -459,21 +459,43 @@
 
             const soalElement = document.getElementById('soalContent');
             
-            let fullText = soalElement.innerText;
+            // LOGIKA HAPUS KATA TOKEN: Memfilter baris yang mengandung kata "token"
+            let rawLines = soalElement.innerText.split('\n');
+            let filteredLines = rawLines.filter(line => {
+                const lowerLine = line.toLowerCase();
+                return !lowerLine.includes("token"); 
+            });
 
-            // Regex diperkuat untuk mendeteksi berbagai kemungkinan penulisan kunci jawaban
+            let fullTextCleaned = filteredLines.join('\n');
+
+            // Regex deteksi kunci jawaban
             const splitRegex = /(?:\n|^)(?:Kunci Jawaban|Jawaban|KUNCI JAWABAN|Kunci|Kunci:)\s*:?/i;
-            const parts = fullText.split(splitRegex);
+            const parts = fullTextCleaned.split(splitRegex);
             
             const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
-            // Jika ada bagian setelah pemisah, itu adalah kunci jawaban
             const linesKunci = parts.length > 1 ? parts.slice(1).join('\n').split('\n').filter(line => line.trim() !== '') : [];
 
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Footer, PageNumber } = docx;
 
             const doc = new Document({
                 sections: [{
                     properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+                    // LOGIKA HALAMAN: Menambahkan footer dengan nomor halaman otomatis
+                    footers: {
+                        default: new Footer({
+                            children: [
+                                new Paragraph({
+                                    alignment: AlignmentType.CENTER,
+                                    children: [
+                                        new TextRun("Halaman "),
+                                        new TextRun({ children: [PageNumber.CURRENT] }),
+                                        new TextRun(" dari "),
+                                        new TextRun({ children: [PageNumber.TOTAL_PAGES] }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    },
                     children: [
                         // KOP SURAT
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
@@ -530,7 +552,7 @@
                             ]
                         }),
 
-                        // KUNCI JAWABAN (OTOMATIS MUNCUL JIKA ADA)
+                        // KUNCI JAWABAN
                         ...(linesKunci.length > 0 ? [
                             new Paragraph({ text: "", spacing: { before: 800 } }),
                             new Paragraph({
@@ -549,7 +571,7 @@
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh (Tanpa kata token + Nomor Halaman).', timer: 2000, showConfirmButton: false });
             });
         }
 
