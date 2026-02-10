@@ -58,6 +58,41 @@ app.use("/auth", require("./routes/auth"));
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
+// --- FITUR ADMIN: TAMBAH TOKEN (POSTGRESQL) ---
+app.post("/admin/add-token", async (req, res) => {
+    const { email, tokens } = req.body;
+    const db = require("./db"); // Memastikan menggunakan koneksi pool postgres anda
+
+    if (!email || !tokens) {
+        return res.status(400).json({ success: false, message: "Data tidak lengkap." });
+    }
+
+    try {
+        // Query PostgreSQL untuk menambah token berdasarkan email
+        // ILIKE digunakan agar pencarian email tidak case-sensitive
+        const query = `
+            UPDATE users 
+            SET tokens = COALESCE(tokens, 0) + $1 
+            WHERE email ILIKE $2 
+            RETURNING email, tokens
+        `;
+        
+        const result = await db.query(query, [parseInt(tokens), email.trim()]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, message: "User tidak ditemukan." });
+        }
+
+        res.json({ 
+            success: true, 
+            message: `Berhasil menambahkan ${tokens} token ke ${result.rows[0].email}` 
+        });
+    } catch (error) {
+        console.error("Admin Token Error:", error);
+        res.status(500).json({ success: false, message: "Gagal memperbarui token di database." });
+    }
+});
+
 // ==========================================
 // 5. RUTE NAVIGASI HALAMAN (VIEWS)
 // ==========================================
@@ -95,12 +130,14 @@ app.post("/auth/forgot-password", async (req, res) => {
     const db = require("./db"); // Memastikan db dipanggil untuk pengecekan
 
     // Cek apakah email terdaftar di database sebelum kirim OTP
-    db.get("SELECT email FROM users WHERE email = ?", [email], async (err, user) => {
+    // Note: Jika db anda sudah pindah ke Postgres, ganti db.get ke db.query
+    db.query("SELECT email FROM users WHERE email = $1", [email], async (err, result) => {
+        const user = result?.rows ? result.rows[0] : null;
+        
         if (err) {
             return res.status(500).json({ success: false, error: "Database error." });
         }
 
-        // Jika email tidak ditemukan, block pengiriman OTP
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
@@ -108,13 +145,11 @@ app.post("/auth/forgot-password", async (req, res) => {
             });
         }
 
-        // Generate kode OTP 6 digit secara acak
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // Simpan OTP ke memori server (terkait dengan email user)
         otpStorage[email] = {
             code: otpCode,
-            expires: Date.now() + 600000 // Berlaku 10 menit
+            expires: Date.now() + 600000 
         };
 
         let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
@@ -132,7 +167,6 @@ app.post("/auth/forgot-password", async (req, res) => {
                 <p style="font-size: 11px; color: #999;">Kode ini bersifat rahasia dan akan kedaluwarsa dalam 10 menit.</p>
             </div>`;
         
-        // PENGATURAN EMAIL PENGIRIM (SENDER)
         sendSmtpEmail.sender = { "name": "Soal AI", "email": "azhardax94@gmail.com" };
         sendSmtpEmail.to = [{ "email": email }];
 
@@ -152,16 +186,14 @@ app.post("/auth/forgot-password", async (req, res) => {
 app.post("/auth/reset-password", async (req, res) => {
     const { email, otp, newPassword } = req.body;
     const bcrypt = require("bcrypt");
-    const db = require("./db"); // Pastikan file db.js tersedia
+    const db = require("./db"); 
 
     const record = otpStorage[email];
 
-    // Cek apakah OTP valid
     if (!record || record.code !== otp) {
         return res.status(400).json({ success: false, error: "Kode OTP salah." });
     }
 
-    // Cek apakah OTP sudah kedaluwarsa
     if (Date.now() > record.expires) {
         delete otpStorage[email];
         return res.status(400).json({ success: false, error: "Kode OTP sudah kedaluwarsa." });
@@ -169,13 +201,10 @@ app.post("/auth/reset-password", async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        db.run("UPDATE users SET password = ? WHERE email = ?", [hashedPassword, email], function(err) {
-            if (err) {
-                return res.status(500).json({ success: false, error: "Gagal update database." });
-            }
-            delete otpStorage[email]; // Hapus OTP setelah sukses
-            res.json({ success: true, message: "Password berhasil dirubah!" });
-        });
+        // Menggunakan syntax Postgres ($1, $2)
+        await db.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+        delete otpStorage[email]; 
+        res.json({ success: true, message: "Password berhasil dirubah!" });
     } catch (error) {
         res.status(500).json({ success: false, error: "Terjadi kesalahan sistem." });
     }
@@ -193,6 +222,7 @@ app.listen(PORT, () => {
 🤖 AI MODEL  : Gemini 2.5 Flash (Active)
 🔗 RUTE      : /forget (Ready)
 🔗 HISTORY   : /ai/history_page (Ready)
+🔗 ADMIN     : /admin/add-token (Ready - Postgres)
 =============================================
     `);
 });
