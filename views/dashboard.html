@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - GuruBantuGuru</title>
+    <title>Dashboard - SOAL AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -70,21 +70,20 @@
 </head>
 <body class="min-h-screen">
 
-    <nav class="flex items-center justify-between px-8 py-6 max-w-[1600px] mx-auto">
-        <h1 class="text-3xl font-[900] italic tracking-tighter">
-            GURU<span class="text-blue-600">BANTUGURU</span>
+    <nav class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 sm:px-8 sm:py-6 max-w-[1600px] mx-auto gap-4">
+        <h1 class="text-2xl sm:text-3xl font-[900] italic tracking-tighter">
+            SOAL<span class="text-blue-600">AI</span>
         </h1>
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-2xl shadow-lg cursor-pointer" onclick="updateTokenDisplay()">
+        <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+            <div class="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-2xl shadow-lg cursor-pointer" onclick="updateTokenDisplay()">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 11V5a1 1 0 112 0v6a1 1 0 11-2 0zM11 14a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
-                <span class="text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
+                <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
             </div>
             
-            <span class="text-[12px] font-bold text-gray-400 uppercase tracking-[0.2em] hidden sm:block">Panel Dasbor Pengajar</span>
-            <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
-                Riwayat Soal
+            <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
+                Riwayat
             </button>
-            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
+            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
                 Keluar
             </button>
         </div>
@@ -92,8 +91,8 @@
 
     <main class="max-w-[1600px] mx-auto px-6 py-8">
         <div class="mb-10">
-            <h2 class="text-4xl font-black tracking-tight mb-2">Selamat Datang Bapak/Ibu Guru! 👋</h2>
-            <p class="text-gray-600 font-semibold text-lg">Mari susun soal ujian berkualitas dengan bantuan teknologi kecerdasan buatan.</p>
+            <h2 class="text-3xl sm:text-4xl font-black tracking-tight mb-2">Selamat Datang Bapak/Ibu Guru! 👋</h2>
+            <p class="text-gray-600 font-semibold text-base sm:text-lg">Mari susun soal ujian berkualitas dengan bantuan teknologi kecerdasan buatan.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
