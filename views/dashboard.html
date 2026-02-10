@@ -86,7 +86,7 @@
                 <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
             </div>
             
-            <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
+            <button onclick="showHistory()" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
                 Riwayat
             </button>
             <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
@@ -599,190 +599,81 @@
         function confirmLogout() {
             Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#0d1117' }).then((result) => { if (result.isConfirmed) window.location.href = '/auth/logout'; });
         }
-    </script>
-</body>
-</html>
-                                        <td style="width: 10%; border:none;"></td>
-                                        <td style="text-align: center; width: 45%; border:none; vertical-align: top;">
-                                            Kota, ${today}<br>Guru Mata Pelajaran<br><br><br><br><br>
-                                            ( ................................ )<br>NIP. ............................
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                    updateTokenDisplay();
-                    Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
-                } else {
-                    if (data.error && data.error.includes("Token habis")) {
-                        Swal.fire({
-                            title: '<span class="font-black text-red-600">TOKEN HABIS!</span>',
-                            html: `
-                                <div class="p-2">
-                                    <p class="text-gray-600 mb-5 font-semibold">Maaf Bapak/Ibu, kuota pembuatan soal Anda sudah habis. Silakan isi ulang untuk lanjut.</p>
-                                    <a href="https://wa.me/6282240400388?text=Halo%20Admin%20GuruBantuGuru,%20saya%20ingin%20isi%20ulang%20token" 
-                                       target="_blank" 
-                                       class="bg-[#25D366] text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-lg inline-block"
-                                       style="text-decoration: none;">
-                                       Hubungi Admin GuruBantuGuru
-                                    </a>
-                                </div>
-                            `,
-                            icon: 'warning',
-                            showConfirmButton: false,
-                            showCancelButton: true,
-                            cancelButtonText: 'Nanti Saja',
-                            borderRadius: '30px'
-                        });
+
+        // ==========================================
+        // KODE TAMBAHAN UNTUK HISTORY (JANGAN DIHAPUS)
+        // ==========================================
+        async function showHistory() {
+            Swal.fire({ title: 'Memuat Riwayat...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const response = await fetch('/ai/history');
+                const data = await response.json();
+                
+                if (data.success) {
+                    let listHtml = `<div class="text-left space-y-3 max-h-96 overflow-y-auto p-2">`;
+                    if (data.rows.length === 0) {
+                        listHtml += `<p class="text-center text-gray-500 py-10">Belum ada riwayat soal.</p>`;
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Gagal', text: data.error, borderRadius: '25px' });
+                        data.rows.forEach(item => {
+                            const date = new Date(item.created_at).toLocaleString('id-ID');
+                            listHtml += `
+                                <div onclick="loadHistoryDetail(${item.id})" class="p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl cursor-pointer transition-all border border-blue-100">
+                                    <div class="font-black text-blue-700 uppercase text-xs">${item.subject || 'Umum'}</div>
+                                    <div class="text-[11px] text-gray-500 font-bold">${item.level || ''} | ${date}</div>
+                                </div>`;
+                        });
                     }
+                    listHtml += `</div>`;
+
+                    Swal.fire({
+                        title: 'RIWAYAT SOAL ANDA',
+                        html: listHtml,
+                        showConfirmButton: false,
+                        showCloseButton: true,
+                        borderRadius: '30px'
+                    });
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI.', borderRadius: '25px' });
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Tidak dapat mengambil data riwayat.' });
             }
         }
 
-        function exportToPDF() {
-            const element = document.getElementById('printableArea');
-            const subject = document.getElementById('subject').value || 'Soal_AI';
-            const opt = { margin: 0.5, filename: `Naskah_Soal_${subject}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-            html2pdf().set(opt).from(element).save();
-        }
-
-        function exportToWord() {
-            const printableArea = document.getElementById('printableArea');
-            if (!printableArea) return;
-
-            const subject = document.getElementById('subject').value || 'Soal_AI';
-            const level = document.getElementById('level').value || '-';
-            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-            const soalElement = document.getElementById('soalContent');
-            
-            // --- LOGIKA PEMBERSIHAN TEKS ---
-            let rawLines = soalElement.innerText.split('\n');
-            let filteredLines = rawLines.filter(line => {
-                const lowerLine = line.toLowerCase();
-                // Menghapus baris informasi token
-                if (lowerLine.includes("token")) return false;
-                // Menghapus baris ujian semester (ganjil/genap)
-                if (lowerLine.includes("semester ganjil") || lowerLine.includes("semester genap")) return false;
-                // Menghapus baris jenjang pendidikan/tingkat
-                if (lowerLine.includes("jenjang pendidikan") || lowerLine.includes("tingkat:")) return false;
-                return true;
-            });
-            // -------------------------------
-
-            let fullTextCleaned = filteredLines.join('\n');
-            const splitRegex = /(Kunci Jawaban:|Jawaban:|KUNCI JAWABAN|Kunci:)/i;
-            const parts = fullTextCleaned.split(splitRegex);
-            
-            const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
-            const linesKunci = parts.length > 1 ? (parts[1] + parts[2]).split('\n').filter(line => line.trim() !== '') : [];
-
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
-
-            const doc = new Document({
-                sections: [{
-                    properties: {
-                        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
-                    },
-                    children: [
-                        // KOP SURAT
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 18 })] }),
-                        new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
-
-                        // IDENTITAS
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: BorderStyle.NONE,
-                            rows: [
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": ....................", bold: true, size: 20 })] })] }),
-                                    ]
-                                }),
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 20 })] })] }),
-                                    ]
-                                }),
-                            ]
-                        }),
-                        new Paragraph({ text: "", spacing: { after: 300 } }),
-
-                        // ISI SOAL
-                        ...linesSoal.map(line => {
-                            const isOption = /^[A-E]\./.test(line.trim());
-                            return new Paragraph({
-                                children: [new TextRun({ text: line, size: 24 })],
-                                spacing: { before: isOption ? 0 : 200, line: 360 },
-                                alignment: AlignmentType.JUSTIFY
-                            });
-                        }),
-
-                        new Paragraph({ text: "", spacing: { after: 600 } }),
-
-                        // TANDA TANGAN
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: BorderStyle.NONE,
-                            rows: [
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ children: [
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 22 })] }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 22 })] }),
-                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
-                                        ] }),
-                                        new TableCell({ children: [
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 22 })] }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 22 })] }),
-                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
-                                        ] }),
-                                    ]
-                                })
-                            ]
-                        }),
-
-                        // KUNCI JAWABAN (MASUK DI BAWAH TANDA TANGAN)
-                        ...(linesKunci.length > 0 ? [
-                            new Paragraph({ text: "", spacing: { before: 800 } }),
-                            new Paragraph({
-                                alignment: AlignmentType.LEFT,
-                                children: [new TextRun({ text: "KUNCI JAWABAN:", bold: true, size: 24, underline: {} })],
-                                spacing: { after: 200 }
-                            }),
-                            ...linesKunci.map(line => new Paragraph({
-                                children: [new TextRun({ text: line, size: 20 })],
-                                spacing: { after: 50 }
-                            }))
-                        ] : [])
-                    ]
-                }]
-            });
-
-            Packer.toBlob(doc).then(blob => {
-                saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh dengan Kunci Jawaban.', timer: 2000, showConfirmButton: false });
-            });
-        }
-
-        function confirmLogout() {
-            Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#0d1117' }).then((result) => { if (result.isConfirmed) window.location.href = '/auth/logout'; });
+        async function loadHistoryDetail(id) {
+            Swal.fire({ title: 'Membuka Soal...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const response = await fetch(`/ai/history/${id}`);
+                const data = await response.json();
+                if (data.success) {
+                    Swal.close();
+                    document.getElementById('placeholder').classList.add('hidden');
+                    document.getElementById('exportToolbar').classList.remove('hidden');
+                    const output = document.getElementById('outputContent');
+                    output.classList.remove('hidden');
+                    
+                    // Masukkan data ke UI (Simulasi seperti baru generate)
+                    document.getElementById('subject').value = data.row.subject || "";
+                    document.getElementById('level').value = data.row.level || "Umum";
+                    
+                    // Render HTML (Sesuai dengan template yang Anda miliki)
+                    const today = new Date(data.row.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    output.innerHTML = `
+                        <div id="printableArea" class="naskah-ujian">
+                            <div style="text-align: center; border-bottom: 4px double black; padding-bottom: 10px; margin-bottom: 25px;">
+                                <h2 style="margin: 0; font-size: 14pt; text-transform: uppercase;">Pemerintah Provinsi / Kota .....................</h2>
+                                <h1 style="margin: 0; font-size: 16pt; text-transform: uppercase;">Dinas Pendidikan dan Kebudayaan</h1>
+                                <h1 style="margin: 5px 0; font-size: 16pt; text-transform: uppercase;">NAMA SEKOLAH ASAL BAPAK/IBU</h1>
+                            </div>
+                            <div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
+                                ${data.row.soal}
+                                <hr class="my-6">
+                                <strong>KUNCI JAWABAN:</strong><br>${data.row.jawaban}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal memuat detail riwayat.' });
+            }
         }
     </script>
 </body>
