@@ -6,8 +6,7 @@ const path = require("path");
 router.post("/login", (req, res) => {
     const { email, password } = req.body; 
     
-    // PERBAIKAN: Menggunakan Query yang lebih kuat untuk Postgres
-    // Kita cari berdasarkan Email ATAU Username secara Case-Insensitive (tidak peduli huruf besar/kecil)
+    // Tetap menggunakan (?) karena db.js akan mengubahnya menjadi ($1, $2, dst) secara otomatis
     const loginQuery = `
         SELECT * FROM users 
         WHERE (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) 
@@ -27,6 +26,7 @@ router.post("/login", (req, res) => {
         req.session.user = {
             id: user.id,
             username: user.username,
+            email: user.email, // Tambahkan email ke session agar middleware isAdmin di server.js bekerja
             role: user.role 
         };
         
