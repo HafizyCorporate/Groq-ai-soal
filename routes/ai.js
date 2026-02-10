@@ -61,7 +61,7 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     - Jumlah Soal: TEPAT ${jumlahDiminta} butir.
 
     ATURAN KHUSUS UNTUK JENJANG SD:
-    1. GAYA BAHASA: Gunakan gaya bercerita (storytelling) yang menarik dan akrab untuk anak-anak pada setiap soal.
+    1. GAYA BAHASA: Gunakan gaya bercerita (storytelling) yang menarik dan akrab untuk anak-anak pada setiap soal tapi tidak usah terlalu panjang cukup 1 baris. 
     2. KOMPOSISI: 80% dari total soal adalah teks cerita murni, dan 20% adalah soal berbasis gambar (gunakan kalimat instruksi: "Perhatikan gambar berikut!").
     3. REFERENSI GAMBAR: Di bagian paling bawah dokumen (setelah Kunci Jawaban), buatkan daftar "REFERENSI GAMBAR" yang berisi link pencarian Google Images yang akurat dan bisa dibuka sesuai deskripsi soal yang berbasis gambar tadi. Format: "Soal No X: [Link]".
 
