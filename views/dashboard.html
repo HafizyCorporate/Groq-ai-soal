@@ -293,7 +293,6 @@
                     updateTokenDisplay();
                     Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
                 } else {
-                    // LOGIKA TOKEN HABIS DENGAN LINK WHATSAPP
                     if (data.error && data.error.includes("Token habis")) {
                         Swal.fire({
                             title: '<span class="font-black text-red-600">TOKEN HABIS!</span>',
@@ -331,17 +330,24 @@
         }
 
         function exportToWord() {
-            const element = document.getElementById('printableArea');
+            const output = document.getElementById('outputContent');
             const subject = document.getElementById('subject').value || 'Soal_AI';
-            if (!element) return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
-            const htmlString = `<!DOCTYPE html><html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 12pt; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } td { border: 1px solid black; padding: 5px; } p { margin-bottom: 15px; text-align: justify; }</style></head><body>${element.innerHTML}</body></html>`;
-            const converted = htmlDocx.asBlob(htmlString);
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(converted);
-            link.download = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (!output || output.innerHTML.trim() === "") {
+                return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
+            }
+            const contentHtml = output.innerHTML;
+            const htmlString = `<!DOCTYPE html><html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 12pt; } table { border-collapse: collapse; width: 100%; } td { padding: 5px; border: 1px solid black; } p { margin-bottom: 15px; text-align: justify; }</style></head><body>${contentHtml}</body></html>`;
+            try {
+                const converted = htmlDocx.asBlob(htmlString);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(converted);
+                link.download = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal mengunduh Word.' });
+            }
         }
 
         function confirmLogout() {
