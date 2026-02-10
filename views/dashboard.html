@@ -330,10 +330,10 @@
         }
 
         function exportToWord() {
-            const output = document.getElementById('outputContent');
+            const printableArea = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
             
-            if (!output || output.innerHTML.trim() === "") {
+            if (!printableArea) {
                 return Swal.fire({ 
                     icon: 'warning', 
                     title: 'Gagal', 
@@ -342,38 +342,35 @@
                 });
             }
 
-            // Ambil isi naskah yang sudah dibuat
-            const contentHtml = output.innerHTML;
+            // Menggunakan format .doc (MIME type application/msword) yang lebih ramah untuk Word HP
+            // Dibandingkan .docx hasil konversi library yang sering dianggap korup di mobile
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
+                           "xmlns:w='urn:schemas-microsoft-com:office:word' "+
+                           "xmlns='http://www.w3.org/TR/REC-html40'>"+
+                           "<head><meta charset='utf-8'><title>Export Word</title>"+
+                           "<style>"+
+                           "body { font-family: 'Times New Roman', serif; font-size: 12pt; color: #000; }"+
+                           "table { border-collapse: collapse; width: 100%; border: none; }"+
+                           "td { vertical-align: top; color: #000; }"+
+                           "p, div { text-align: justify; line-height: 1.5; color: #000; margin-bottom: 10px; }"+
+                           ".naskah-ujian { width: 100%; }"+
+                           "</style></head><body>";
+            const footer = "</body></html>";
+            const sourceHTML = header + printableArea.innerHTML + footer;
+            
+            // Blob dengan format msword agar langsung dikenali oleh aplikasi Word di HP
+            const blob = new Blob(['\ufeff', sourceHTML], {
+                type: 'application/msword'
+            });
 
-            // Template khusus dengan header XML Office agar terbaca di Microsoft Word HP
-            const htmlString = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head>
-                    <meta charset='utf-8'>
-                    <title>Naskah Soal</title>
-                    <style>
-                        body { font-family: "Times New Roman", serif; font-size: 12pt; color: #000000; }
-                        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-                        td { border: 1px solid #000000; padding: 5px; vertical-align: top; color: #000000; }
-                        p, div { margin-bottom: 10px; text-align: justify; line-height: 1.5; color: #000000; }
-                        h1, h2, h3 { text-align: center; color: #000000; margin: 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="naskah-ujian">
-                        ${contentHtml}
-                    </div>
-                </body>
-                </html>`;
+            const fileName = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.doc`;
 
-            try {
-                // Konversi HTML ke Blob .docx menggunakan htmlDocx
-                const converted = htmlDocx.asBlob(htmlString);
-                const fileName = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
-
-                // Logika download paksa untuk browser mobile
+            // Logika download untuk mobile & desktop
+            if (navigator.msSaveOrOpenBlob) {
+                navigator.msSaveOrOpenBlob(blob, fileName);
+            } else {
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(converted);
+                link.href = URL.createObjectURL(blob);
                 link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
@@ -381,16 +378,7 @@
                 setTimeout(() => {
                     document.body.removeChild(link);
                     URL.revokeObjectURL(link.href);
-                }, 200);
-
-            } catch (err) {
-                console.error(err);
-                Swal.fire({ 
-                    icon: 'error', 
-                    title: 'Error', 
-                    text: 'Gagal mengunduh file Word.',
-                    borderRadius: '25px' 
-                });
+                }, 100);
             }
         }
 
