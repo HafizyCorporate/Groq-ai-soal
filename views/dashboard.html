@@ -71,7 +71,6 @@
             font-weight: 900;
         }
 
-        /* UPDATE: Merapatkan spasi pilihan jawaban sesuai permintaan */
         .naskah-ujian p, .naskah-ujian div {
             margin-bottom: 5px !important; 
             text-align: justify;
@@ -79,7 +78,6 @@
             z-index: 1;
         }
 
-        /* Khusus untuk memberikan jarak antar nomor soal agar tetap rapi */
         .naskah-ujian b, .naskah-ujian strong {
             display: inline-block;
             margin-top: 15px !important;
@@ -344,10 +342,6 @@
             formData.append('level', level);
             formData.append('type', type);
 
-            if(level === "SD Kelas 1-3") {
-                formData.append('prompt_extension', "WAJIB: Karena target adalah siswa SD Kelas 1-3, setiap butir soal harus diawali dengan kalimat cerita pendek atau pengantar yang relevan sebelum masuk ke inti pertanyaan agar anak tidak pusing.");
-            }
-
             for (let i = 0; i < filesToSend.length; i++) { formData.append('images[]', filesToSend[i]); }
 
             Swal.fire({
@@ -448,7 +442,7 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        /* PERBAIKAN: Fungsi Export Word dengan hapus kata token dan tambah nomor halaman */
+        /* FUNGSI WORD YANG DISINKRONKAN DENGAN REFERENSI GAMBAR DARI AI.JS */
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
@@ -459,28 +453,36 @@
 
             const soalElement = document.getElementById('soalContent');
             
-            // LOGIKA HAPUS KATA TOKEN: Memfilter baris yang mengandung kata "token"
+            // LOGIKA HAPUS KATA TOKEN
             let rawLines = soalElement.innerText.split('\n');
-            let filteredLines = rawLines.filter(line => {
-                const lowerLine = line.toLowerCase();
-                return !lowerLine.includes("token"); 
-            });
-
+            let filteredLines = rawLines.filter(line => !line.toLowerCase().includes("token"));
             let fullTextCleaned = filteredLines.join('\n');
 
-            // Regex deteksi kunci jawaban
-            const splitRegex = /(?:\n|^)(?:Kunci Jawaban|Jawaban|KUNCI JAWABAN|Kunci|Kunci:)\s*:?/i;
-            const parts = fullTextCleaned.split(splitRegex);
+            // LOGIKA PEMISAHAN BAGIAN (SOAL, KUNCI, REFERENSI)
+            const splitKunci = /(?:\n|^)(?:Kunci Jawaban|Jawaban|KUNCI JAWABAN|Kunci|Kunci:)\s*:?/i;
+            const splitReferensi = /(?:\n|^)(?:REFERENSI GAMBAR|Referensi Gambar|Link Gambar)\s*:?/i;
+
+            const mainParts = fullTextCleaned.split(splitKunci);
+            const contentSoal = mainParts[0];
             
-            const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
-            const linesKunci = parts.length > 1 ? parts.slice(1).join('\n').split('\n').filter(line => line.trim() !== '') : [];
+            let contentKunci = "";
+            let contentReferensi = "";
+
+            if (mainParts.length > 1) {
+                const subParts = mainParts[1].split(splitReferensi);
+                contentKunci = subParts[0];
+                contentReferensi = subParts.length > 1 ? subParts[1] : "";
+            }
+
+            const linesSoal = contentSoal.split('\n').filter(line => line.trim() !== '');
+            const linesKunci = contentKunci.split('\n').filter(line => line.trim() !== '');
+            const linesRef = contentReferensi.split('\n').filter(line => line.trim() !== '');
 
             const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Footer, PageNumber } = docx;
 
             const doc = new Document({
                 sections: [{
                     properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
-                    // LOGIKA HALAMAN: Menambahkan footer dengan nomor halaman otomatis
                     footers: {
                         default: new Footer({
                             children: [
@@ -564,6 +566,18 @@
                                 children: [new TextRun({ text: line, size: 20 })],
                                 spacing: { after: 50 }
                             }))
+                        ] : []),
+
+                        // REFERENSI GAMBAR (DI HALAMAN TERAKHIR)
+                        ...(linesRef.length > 0 ? [
+                            new Paragraph({ text: "", spacing: { before: 500 } }),
+                            new Paragraph({
+                                children: [new TextRun({ text: "REFERENSI GAMBAR (Unduh & Tempel Manual)", bold: true, size: 22, color: "FF0000" })]
+                            }),
+                            ...linesRef.map(line => new Paragraph({
+                                children: [new TextRun({ text: line, size: 18, color: "0000FF" })],
+                                spacing: { before: 100 }
+                            }))
                         ] : [])
                     ]
                 }]
@@ -571,7 +585,7 @@
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh (Tanpa kata token + Nomor Halaman).', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh dengan Referensi Gambar.', timer: 2000, showConfirmButton: false });
             });
         }
 
