@@ -332,21 +332,66 @@
         function exportToWord() {
             const output = document.getElementById('outputContent');
             const subject = document.getElementById('subject').value || 'Soal_AI';
+            
+            // Cek apakah konten sudah ada
             if (!output || output.innerHTML.trim() === "") {
-                return Swal.fire({ icon: 'warning', title: 'Gagal', text: 'Buat soal terlebih dahulu!' });
+                return Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Gagal', 
+                    text: 'Silakan buat soal terlebih dahulu!',
+                    borderRadius: '25px' 
+                });
             }
+
+            // Ambil HTML dari area cetak
             const contentHtml = output.innerHTML;
-            const htmlString = `<!DOCTYPE html><html><head><meta charset='utf-8'><style>body { font-family: "Times New Roman", serif; font-size: 12pt; } table { border-collapse: collapse; width: 100%; } td { padding: 5px; border: 1px solid black; } p { margin-bottom: 15px; text-align: justify; }</style></head><body>${contentHtml}</body></html>`;
+
+            // Template HTML lengkap untuk Word
+            const htmlString = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <style>
+                        body { font-family: "Times New Roman", serif; font-size: 12pt; }
+                        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+                        td { padding: 5px; vertical-align: top; }
+                        p { margin-bottom: 10px; text-align: justify; line-height: 1.5; }
+                        .naskah-ujian { padding: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="naskah-ujian">
+                        ${contentHtml}
+                    </div>
+                </body>
+                </html>`;
+
             try {
+                // Konversi ke Blob Word
                 const converted = htmlDocx.asBlob(htmlString);
+                const fileName = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
+
+                // Logika download untuk browser mobile & desktop
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(converted);
-                link.download = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
+                link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
+                
+                // Bersihkan memory
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                }, 100);
+
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal mengunduh Word.' });
+                console.error(err);
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Error', 
+                    text: 'Gagal mengunduh file Word.',
+                    borderRadius: '25px' 
+                });
             }
         }
 
