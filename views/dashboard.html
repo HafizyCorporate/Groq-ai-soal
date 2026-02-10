@@ -32,7 +32,6 @@
             scrollbar-width: thin;
             scrollbar-color: #2563eb #f8faff;
             width: 100%;
-            /* Animasi Muncul Lembut */
             animation: fadeInPage 0.8s ease-out;
         }
 
@@ -44,7 +43,6 @@
         #outputContent::-webkit-scrollbar { width: 6px; }
         #outputContent::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* PERCANTIK JENDELA NASKAH */
         .naskah-ujian {
             font-family: 'Times New Roman', Times, serif !important;
             color: black !important;
@@ -54,14 +52,12 @@
             font-size: 12pt !important;
             line-height: 1.6;
             width: 100%;
-            /* Efek Kertas Melayang */
             box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             box-sizing: border-box;
             border-radius: 4px;
             position: relative;
         }
 
-        /* Watermark Halus di Latar Belakang Jendela */
         .naskah-ujian::after {
             content: "SOAL AI";
             position: absolute;
@@ -75,20 +71,27 @@
             font-weight: 900;
         }
 
+        /* UPDATE: Merapatkan spasi pilihan jawaban sesuai permintaan */
         .naskah-ujian p, .naskah-ujian div {
-            margin-bottom: 20px !important; 
+            margin-bottom: 5px !important; 
             text-align: justify;
             position: relative;
             z-index: 1;
         }
 
+        /* Khusus untuk memberikan jarak antar nomor soal agar tetap rapi */
+        .naskah-ujian b, .naskah-ujian strong {
+            display: inline-block;
+            margin-top: 15px !important;
+            margin-bottom: 5px !important;
+        }
+
         .naskah-ujian br {
             content: "";
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             display: block;
         }
 
-        /* Penegasan untuk Kop Surat */
         .kop-surat h1, .kop-surat h2 {
             letter-spacing: 1px;
             line-height: 1.2;
@@ -249,7 +252,6 @@
     </main>
 
     <script>
-        // --- Semua Fungsi Script Tetap Dipertahankan (Tidak ada perubahan logika) ---
         async function checkAdminStatus() {
             try {
                 const response = await fetch('/auth/me'); 
@@ -371,7 +373,6 @@
                     
                     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                     
-                    // --- TEMPLATE NASKAH YANG DIPERCANTIK ---
                     output.innerHTML = `
                         <div id="printableArea" class="naskah-ujian shadow-2xl">
                             <div class="kop-surat" style="text-align: center; border-bottom: 4px double black; padding-bottom: 15px; margin-bottom: 30px;">
@@ -440,7 +441,6 @@
             } catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI.', borderRadius: '25px' }); }
         }
 
-        // --- Fungsi Ekspor & Logout Tetap Dipertahankan (Tidak Berubah) ---
         function exportToPDF() {
             const element = document.getElementById('printableArea');
             const subject = document.getElementById('subject').value || 'Soal_AI';
@@ -448,68 +448,113 @@
             html2pdf().set(opt).from(element).save();
         }
 
+        /* UPDATE: Export Word dengan Kunci Jawaban di Bawah Tanda Tangan & Spasi Rapat */
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
+
             const subject = document.getElementById('subject').value || 'Soal_AI';
             const level = document.getElementById('level').value || '-';
             const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
             const soalElement = document.getElementById('soalContent');
+            
             let rawLines = soalElement.innerText.split('\n');
             let filteredLines = rawLines.filter(line => {
                 const lowerLine = line.toLowerCase();
                 if (lowerLine.includes("token")) return false;
-                if (lowerLine.includes("semester ganjil") || lowerLine.includes("semester genap")) return false;
-                if (lowerLine.includes("jenjang pendidikan") || lowerLine.includes("tingkat:")) return false;
                 return true;
             });
+
             let fullTextCleaned = filteredLines.join('\n');
             const splitRegex = /(Kunci Jawaban:|Jawaban:|KUNCI JAWABAN|Kunci:)/i;
             const parts = fullTextCleaned.split(splitRegex);
+            
             const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
             const linesKunci = parts.length > 1 ? (parts[1] + parts[2]).split('\n').filter(line => line.trim() !== '') : [];
+
             const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
+
             const doc = new Document({
                 sections: [{
                     properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
                     children: [
+                        // KOP SURAT
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
                         new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
+
+                        // IDENTITAS
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE }, borders: BorderStyle.NONE,
                             rows: [
                                 new TableRow({ children: [
-                                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 20 })] })] }),
-                                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 20 })] })] }),
-                                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 20 })] })] }),
-                                    new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": ....................", bold: true, size: 20 })] })] }),
+                                    new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN : " + subject.toUpperCase(), bold: true, size: 20 })] })] }),
+                                    new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL : ....................", bold: true, size: 20 })] })] }),
                                 ]}),
                                 new TableRow({ children: [
-                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 20 })] })] }),
-                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 20 })] })] }),
-                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 20 })] })] }),
-                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 20 })] })] }),
+                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG : " + level, bold: true, size: 20 })] })] }),
+                                    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU : ........ MENIT", bold: true, size: 20 })] })] }),
                                 ]}),
                             ]
                         }),
                         new Paragraph({ text: "", spacing: { after: 300 } }),
-                        ...linesSoal.map(line => new Paragraph({ children: [new TextRun({ text: line, size: 24 })], spacing: { before: 200, line: 360 }, alignment: AlignmentType.JUSTIFY })),
+
+                        // ISI SOAL (DENGAN LOGIKA SPASI RAPAT)
+                        ...linesSoal.map(line => {
+                            const isOption = /^[A-E]\./.test(line.trim()); // Deteksi A,B,C,D
+                            return new Paragraph({
+                                children: [new TextRun({ text: line, size: 24 })],
+                                spacing: { before: isOption ? 0 : 150, line: 300 },
+                                alignment: AlignmentType.JUSTIFY
+                            });
+                        }),
+
                         new Paragraph({ text: "", spacing: { after: 600 } }),
+
+                        // TANDA TANGAN
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE }, borders: BorderStyle.NONE,
                             rows: [
                                 new TableRow({ children: [
-                                    new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 22 })] }), new Paragraph({ text: "", spacing: { after: 1000 } }), new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22 })] }) ]}),
-                                    new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 22 })] }), new Paragraph({ text: "", spacing: { after: 1000 } }), new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22 })] }) ]}),
+                                    new TableCell({ children: [
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 22 })] }),
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 22 })] }),
+                                        new Paragraph({ text: "", spacing: { after: 800 } }),
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
+                                    ]}),
+                                    new TableCell({ children: [
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 22 })] }),
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 22 })] }),
+                                        new Paragraph({ text: "", spacing: { after: 800 } }),
+                                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
+                                    ]}),
                                 ]})
                             ]
                         }),
+
+                        // KUNCI JAWABAN (OTOMATIS DI BAWAH)
+                        ...(linesKunci.length > 0 ? [
+                            new Paragraph({ text: "", spacing: { before: 800 } }),
+                            new Paragraph({
+                                alignment: AlignmentType.LEFT,
+                                children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24, underline: {} })],
+                                spacing: { after: 200 }
+                            }),
+                            ...linesKunci.map(line => new Paragraph({
+                                children: [new TextRun({ text: line, size: 20 })],
+                                spacing: { after: 50 }
+                            }))
+                        ] : [])
                     ]
                 }]
             });
-            Packer.toBlob(doc).then(blob => { saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`); });
+
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh.', timer: 2000, showConfirmButton: false });
+            });
         }
 
         function confirmLogout() {
