@@ -383,7 +383,6 @@
                     document.getElementById('placeholder').classList.add('hidden');
                     document.getElementById('exportToolbar').classList.remove('hidden');
                     
-                    // Tampilkan Peringatan Otomatis
                     document.getElementById('containerPeringatan').style.display = 'block';
 
                     const output = document.getElementById('outputContent');
@@ -476,12 +475,14 @@
 
             const soalElement = document.getElementById('soalContent');
             
+            // Membersihkan teks dari watermark token
             let rawLines = soalElement.innerText.split('\n');
             let filteredLines = rawLines.filter(line => !line.toLowerCase().includes("token"));
             let fullTextCleaned = filteredLines.join('\n');
 
+            // RegEx untuk memisahkan Kunci Jawaban dan Referensi Gambar
             const splitKunci = /(?:\n|^)(?:Kunci Jawaban|Jawaban|KUNCI JAWABAN|Kunci|Kunci:)\s*:?/i;
-            const splitReferensi = /(?:\n|^)(?:REFERENSI GAMBAR|Referensi Gambar|Link Gambar)\s*:?/i;
+            const splitReferensi = /(?:\n|^)(?:REFERENSI GAMBAR|Referensi Gambar|Link Gambar|GAMBAR:)\s*:?/i;
 
             const mainParts = fullTextCleaned.split(splitKunci);
             const contentSoal = mainParts[0];
@@ -495,11 +496,7 @@
                 contentReferensi = subParts.length > 1 ? subParts[1] : "";
             }
 
-            const linesSoal = contentSoal.split('\n').filter(line => line.trim() !== '');
-            const linesKunci = contentKunci.split('\n').filter(line => line.trim() !== '');
-            const linesRef = contentReferensi.split('\n').filter(line => line.trim() !== '');
-
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Footer, PageNumber } = docx;
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, Footer, PageNumber, PageBreak } = docx;
 
             const doc = new Document({
                 sections: [{
@@ -512,19 +509,19 @@
                                     children: [
                                         new TextRun("Halaman "),
                                         new TextRun({ children: [PageNumber.CURRENT] }),
-                                        new TextRun(" dari "),
-                                        new TextRun({ children: [PageNumber.TOTAL_PAGES] }),
                                     ],
                                 }),
                             ],
                         }),
                     },
                     children: [
+                        // KOP SURAT
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
                         new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
 
+                        // INFO UJIAN
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE }, borders: BorderStyle.NONE,
                             rows: [
@@ -540,7 +537,8 @@
                         }),
                         new Paragraph({ text: "", spacing: { after: 300 } }),
 
-                        ...linesSoal.map(line => {
+                        // NASKAH SOAL
+                        ...contentSoal.split('\n').filter(l => l.trim() !== '').map(line => {
                             const isOption = /^[A-E]\./i.test(line.trim()); 
                             return new Paragraph({
                                 children: [new TextRun({ text: line, size: 24 })],
@@ -551,6 +549,7 @@
 
                         new Paragraph({ text: "", spacing: { after: 600 } }),
 
+                        // TANDA TANGAN
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE }, borders: BorderStyle.NONE,
                             rows: [
@@ -571,27 +570,30 @@
                             ]
                         }),
 
-                        ...(linesKunci.length > 0 ? [
-                            new Paragraph({ text: "", spacing: { before: 800 } }),
-                            new Paragraph({
-                                alignment: AlignmentType.LEFT,
-                                children: [new TextRun({ text: "KUNCI JAWABAN", bold: true, size: 24, underline: {} })],
-                                spacing: { after: 200 }
-                            }),
-                            ...linesKunci.map(line => new Paragraph({
-                                children: [new TextRun({ text: line, size: 20 })],
-                                spacing: { after: 50 }
+                        // --- HALAMAN BARU UNTUK KUNCI DAN REFERENSI ---
+                        new Paragraph({ children: [new PageBreak()] }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [new TextRun({ text: "KUNCI JAWABAN & REFERENSI GURU", bold: true, size: 28, underline: {} })],
+                            spacing: { after: 400 }
+                        }),
+
+                        // Bagian Kunci Jawaban
+                        ...(contentKunci ? [
+                            new Paragraph({ children: [new TextRun({ text: "KUNCI JAWABAN:", bold: true, size: 24, color: "2563eb" })], spacing: { after: 200 } }),
+                            ...contentKunci.split('\n').filter(l => l.trim() !== '').map(line => new Paragraph({
+                                children: [new TextRun({ text: line, size: 22 })],
+                                spacing: { after: 100 }
                             }))
                         ] : []),
 
-                        ...(linesRef.length > 0 ? [
-                            new Paragraph({ text: "", spacing: { before: 500 } }),
-                            new Paragraph({
-                                children: [new TextRun({ text: "REFERENSI GAMBAR (Unduh & Tempel Manual)", bold: true, size: 22, color: "FF0000" })]
-                            }),
-                            ...linesRef.map(line => new Paragraph({
-                                children: [new TextRun({ text: line, size: 18, color: "0000FF" })],
-                                spacing: { before: 100 }
+                        // Bagian Referensi Gambar
+                        ...(contentReferensi ? [
+                            new Paragraph({ text: "", spacing: { before: 400 } }),
+                            new Paragraph({ children: [new TextRun({ text: "REFERENSI GAMBAR:", bold: true, size: 24, color: "dc2626" })], spacing: { after: 200 } }),
+                            ...contentReferensi.split('\n').filter(l => l.trim() !== '').map(line => new Paragraph({
+                                children: [new TextRun({ text: line, size: 20, color: "0000FF" })],
+                                spacing: { after: 100 }
                             }))
                         ] : [])
                     ]
@@ -600,7 +602,7 @@
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh dengan Referensi Gambar.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh dengan Kunci & Referensi.', timer: 2000, showConfirmButton: false });
             });
         }
 
@@ -640,8 +642,6 @@
                     Swal.close();
                     document.getElementById('placeholder').classList.add('hidden');
                     document.getElementById('exportToolbar').classList.remove('hidden');
-                    
-                    // Tampilkan Peringatan Otomatis pada Riwayat
                     document.getElementById('containerPeringatan').style.display = 'block';
 
                     const output = document.getElementById('outputContent');
@@ -649,6 +649,7 @@
                     document.getElementById('subject').value = data.row.subject || "";
                     document.getElementById('level').value = data.row.level || "Umum";
                     const today = new Date(data.row.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    
                     output.innerHTML = `
                         <div id="printableArea" class="naskah-ujian">
                             <div style="text-align: center; border-bottom: 4px double black; padding-bottom: 15px; margin-bottom: 30px;">
@@ -658,7 +659,7 @@
                             </div>
                             <div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
                                 ${data.row.soal}
-                                <hr class="my-6">
+                                <br><br>
                                 <strong>KUNCI JAWABAN:</strong><br>${data.row.jawaban}
                             </div>
                         </div>
