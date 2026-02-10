@@ -52,7 +52,7 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     const level = req.body.level || "Umum"; 
     const type = req.body.type || "Pilihan Ganda"; 
 
-    // --- PROMPT UNTUK SD (BERCERITA & KOMPOSISI 20% GAMBAR) ---
+    // --- UPDATE PROMPT: STRUKTUR SOAL LEBIH TEGAS & JELAS ---
     let prompt = `Anda adalah pakar pembuat soal ujian profesional. 
     Buatlah soal dengan detail sebagai berikut:
     - Mata Pelajaran: ${subject}
@@ -60,18 +60,21 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     - Tipe Soal: ${type}
     - Jumlah Soal: TEPAT ${jumlahDiminta} butir.
 
-    ATURAN KHUSUS UNTUK JENJANG SD:
-    1. GAYA BAHASA: Gunakan gaya bercerita (storytelling) yang menarik dan akrab untuk anak-anak pada setiap soal tapi tidak usah terlalu panjang cukup 1 baris. 
-    2. KOMPOSISI: 80% dari total soal adalah teks cerita murni, dan 20% adalah soal berbasis gambar (gunakan kalimat instruksi: "Perhatikan gambar berikut!").
-    3. REFERENSI GAMBAR: Di bagian paling bawah dokumen (setelah Kunci Jawaban), buatkan daftar "REFERENSI GAMBAR" yang berisi link pencarian Google Images yang akurat dan bisa dibuka sesuai deskripsi soal yang berbasis gambar tadi. Format: "Soal No X: [Link]".
+    ATURAN KHUSUS STRUKTUR SOAL:
+    1. FORMAT STIMULUS: Jika menggunakan gaya bercerita (storytelling), pisahkan cerita dengan pertanyaan. 
+       - Tampilkan cerita/paragraf pengantar terlebih dahulu.
+       - Berikan pertanyaan yang JELAS di baris baru setelah cerita selesai. 
+       - JANGAN menaruh pertanyaan di tengah-tengah kalimat cerita atau menggantung di dalam cerita.
+    2. GAYA BAHASA: Untuk jenjang SD, gunakan bahasa yang menarik dan akrab namun tetap formal dalam penulisan soal. Cukup 1-2 baris cerita.
+    3. KOMPOSISI: 80% teks cerita/pernyataan, dan 20% berbasis gambar (instruksi: "Perhatikan gambar berikut!").
+    4. REFERENSI GAMBAR: Di bagian paling bawah (setelah Kunci Jawaban), buat daftar "REFERENSI GAMBAR". Format: "Soal No X: [Link pencarian Google Images]".
 
     ATURAN PENULISAN UMUM:
-    1. Gunakan Bahasa Indonesia yang sopan, baku, dan sesuai jenjang ${level}.
+    1. Gunakan Bahasa Indonesia yang sopan dan baku sesuai jenjang ${level}.
     2. Jika Tipe Soal adalah Pilihan Ganda:
-       - Untuk SD/SMP: berikan pilihan A, B, C, D.
-       - Untuk SMA: berikan pilihan A, B, C, D, E.
-    3. Jika Tipe Soal adalah Essay: Buatlah pertanyaan yang membutuhkan jawaban uraian mendalam.
-    4. Format Output: Gunakan HTML (<h3> untuk judul, <p> untuk soal, <ul><li> untuk pilihan).
+       - SD/SMP: pilihan A, B, C, D.
+       - SMA: pilihan A, B, C, D, E.
+    3. Format Output: Gunakan HTML (<h3> untuk judul, <p> untuk soal, <ul><li> untuk pilihan).
     
     Wajib sertakan teks berikut di antara Soal dan Kunci Jawaban: ###BATAS_AKHIR_SOAL###
     Sertakan Kunci Jawaban dan Pembahasan singkat di bagian paling bawah.`;
@@ -93,7 +96,6 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     let teksSoal = "";
     let teksJawaban = "";
 
-    // PENYESUAIAN: Memastikan teksJawaban menangkap seluruh konten setelah batas (Kunci + Referensi Gambar)
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
         const splitParts = fullContent.split("###BATAS_AKHIR_SOAL###");
         teksSoal = splitParts[0].trim();
