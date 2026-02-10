@@ -8,7 +8,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Pastikan menggunakan model yang tersedia
+// UPDATE: Menggunakan model Gemini 3 Flash Preview untuk kecepatan maksimal
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }); 
 
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
@@ -51,7 +52,7 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     const level = req.body.level || "Umum"; 
     const type = req.body.type || "Pilihan Ganda"; 
 
-    // --- MODIFIKASI PROMPT UNTUK SD (BERCERITA & KOMPOSISI 20% GAMBAR) ---
+    // --- PROMPT UNTUK SD (BERCERITA & KOMPOSISI 20% GAMBAR) ---
     let prompt = `Anda adalah pakar pembuat soal ujian profesional. 
     Buatlah soal dengan detail sebagai berikut:
     - Mata Pelajaran: ${subject}
