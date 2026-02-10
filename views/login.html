@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
 
-        /* --- STYLE ANIMASI SPLASH SCREEN --- */
+        /* --- STYLE ANIMASI SPLASH SCREEN DIPERCANTIK --- */
         #splash-screen {
             position: fixed;
             top: 0;
@@ -28,47 +28,52 @@
 
         .splash-content {
             text-align: center;
+            width: 100%; /* Memastikan kontainer penuh agar teks tidak tercekik */
             animation: focusIn 1s ease-out both;
         }
 
         .splash-emoji {
             font-size: 60px;
             margin-bottom: 20px;
+            display: block;
             animation: heartBeat 2s infinite;
         }
 
         .splash-title {
-            font-size: 3.5rem;
+            font-size: 4rem; /* Ukuran disesuaikan */
             font-weight: 900;
-            letter-spacing: -3px;
+            letter-spacing: -0.05em; /* Diperbaiki agar tidak terlalu rapat/terpotong */
             margin: 0;
             color: #1a1a1a;
             font-style: italic;
+            line-height: 1; /* Menjaga spasi vertikal */
         }
 
         .splash-ai {
             background: linear-gradient(to right, #2563eb, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            padding-right: 5px; /* Memberi ruang agar huruf I tidak terpotong */
         }
 
         .splash-slogan {
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 6px;
-            color: #64748b;
-            margin-top: 10px;
-            font-size: 12px;
+            letter-spacing: 0.4em; /* Spasi antar huruf slogan dipercantik */
+            color: #94a3b8;
+            margin-top: 15px;
+            font-size: 14px;
             animation: slideUp 1.2s ease-out 0.3s both;
         }
 
         .splash-loader {
-            width: 200px;
-            height: 4px;
+            width: 180px;
+            height: 6px;
             background: #f1f5f9;
             margin: 40px auto 0;
             border-radius: 20px;
             overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .splash-progress {
@@ -80,7 +85,7 @@
         }
 
         @keyframes focusIn {
-            0% { filter: blur(12px); opacity: 0; transform: scale(1.2); }
+            0% { filter: blur(12px); opacity: 0; transform: scale(1.1); }
             100% { filter: blur(0); opacity: 1; transform: scale(1); }
         }
 
@@ -91,9 +96,9 @@
 
         @keyframes heartBeat {
             0%, 100% { transform: scale(1); }
-            14% { transform: scale(1.1); }
+            14% { transform: scale(1.15); }
             28% { transform: scale(1); }
-            42% { transform: scale(1.1); }
+            42% { transform: scale(1.15); }
         }
 
         @keyframes loadingAnim {
@@ -104,7 +109,7 @@
         .splash-hidden {
             opacity: 0 !important;
             visibility: hidden !important;
-            transform: translateY(-100%) !important;
+            transform: scale(1.05); /* Efek zoom out saat hilang */
         }
     </style>
 </head>
@@ -112,14 +117,15 @@
 
     <div id="splash-screen">
         <div class="splash-content">
-            <div class="splash-emoji">🤝</div>
+            <span class="splash-emoji">🤝</span>
             <h1 class="splash-title">SOAL <span class="splash-ai">AI</span></h1>
-            <p class="splash-slogan">GuruBantuGuru</p>
+            <p class="splash-slogan">GURU BANTU GURU</p>
             <div class="splash-loader">
                 <div class="splash-progress"></div>
             </div>
         </div>
     </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
@@ -128,12 +134,14 @@
             }, 2800);
         });
     </script>
+
     <div class="mb-10 text-center">
         <h1 class="text-6xl font-[900] italic tracking-tighter text-[#1a1a1a]">
             SOAL <span class="text-blue-600">AI</span>
         </h1>
         <p class="text-gray-400 text-[11px] mt-2 tracking-[0.3em] font-bold uppercase">Sistem Pembuat Soal Otomatis</p>
     </div>
+
     <div class="bg-white rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.06)] border border-gray-50 w-full max-w-[380px] p-10">
         <h2 class="text-center text-blue-600 font-black tracking-widest text-[13px] mb-8 uppercase">Masuk Ke Akun</h2>
         <form id="loginForm" class="space-y-4">
@@ -146,6 +154,7 @@
             <a href="/register" class="text-blue-600 font-black hover:underline transition uppercase tracking-wider">Daftar Akun</a>
         </div>
     </div>
+
     <script>
         document.getElementById('loginForm').onsubmit = async (e) => {
             e.preventDefault();
