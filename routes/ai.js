@@ -8,7 +8,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Pastikan menggunakan model yang tersedia
 
 const uploadDir = path.join(__dirname, "../uploads/");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
@@ -32,7 +32,6 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
 
     const userId = req.session.user.id;
 
-    // --- 1. CEK TOKEN USER SEBELUM PROSES ---
     const user = await new Promise((resolve) => {
       db.get("SELECT tokens, role FROM users WHERE id = ?", [userId], (err, row) => resolve(row));
     });
@@ -52,6 +51,7 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     const level = req.body.level || "Umum"; 
     const type = req.body.type || "Pilihan Ganda"; 
 
+    // --- MODIFIKASI PROMPT UNTUK SD (BERCERITA & KOMPOSISI 20% GAMBAR) ---
     let prompt = `Anda adalah pakar pembuat soal ujian profesional. 
     Buatlah soal dengan detail sebagai berikut:
     - Mata Pelajaran: ${subject}
@@ -59,7 +59,12 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     - Tipe Soal: ${type}
     - Jumlah Soal: TEPAT ${jumlahDiminta} butir.
 
-    ATURAN PENULISAN:
+    ATURAN KHUSUS UNTUK JENJANG SD:
+    1. GAYA BAHASA: Gunakan gaya bercerita (storytelling) yang menarik dan akrab untuk anak-anak pada setiap soal.
+    2. KOMPOSISI: 80% dari total soal adalah teks cerita murni, dan 20% adalah soal berbasis gambar (gunakan kalimat instruksi: "Perhatikan gambar berikut!").
+    3. REFERENSI GAMBAR: Di bagian paling bawah dokumen (setelah Kunci Jawaban), buatkan daftar "REFERENSI GAMBAR" yang berisi link pencarian Google Images yang akurat dan bisa dibuka sesuai deskripsi soal yang berbasis gambar tadi. Format: "Soal No X: [Link]".
+
+    ATURAN PENULISAN UMUM:
     1. Gunakan Bahasa Indonesia yang sopan, baku, dan sesuai jenjang ${level}.
     2. Jika Tipe Soal adalah Pilihan Ganda:
        - Untuk SD/SMP: berikan pilihan A, B, C, D.
@@ -96,14 +101,12 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
         teksJawaban = "Kunci jawaban terlampir di dalam teks soal.";
     }
 
-    // --- 2. POTONG TOKEN & SIMPAN HISTORY ---
     db.run(
       "UPDATE users SET tokens = tokens - 1 WHERE id = ?", 
       [userId],
       function(errUpdate) {
         if (errUpdate) console.error("Gagal potong token:", errUpdate);
 
-        // BAGIAN YANG DIUBAH: Menambahkan subject dan level ke dalam database history
         db.run(
           "INSERT INTO history (user_id, soal, jawaban, subject, level, created_at) VALUES (?,?,?,?,?, CURRENT_TIMESTAMP)",
           [userId, teksSoal, teksJawaban, subject, level],
@@ -149,7 +152,6 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
 router.get("/history", (req, res) => {
   if (!req.session.user) return res.status(401).json({ success: false });
   const userId = req.session.user.id;
-  // Menambahkan subject dan level agar bisa muncul di list riwayat
   db.all("SELECT id, soal, subject, level, created_at FROM history WHERE user_id = ? ORDER BY created_at DESC", [userId], (err, rows) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
     res.json({ success: true, rows });
