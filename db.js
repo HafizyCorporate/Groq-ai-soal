@@ -67,6 +67,19 @@ if (process.env.DATABASE_URL) {
         );
       `);
 
+      // --- TAMBAHAN: AUTO MIGRATION UNTUK HISTORY ---
+      await pool.query(`
+        DO $$ 
+        BEGIN 
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='history' AND column_name='subject') THEN
+            ALTER TABLE history ADD COLUMN subject TEXT;
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='history' AND column_name='level') THEN
+            ALTER TABLE history ADD COLUMN level TEXT;
+          END IF;
+        END $$;
+      `);
+
       // 2. Pastikan Admin Versacy terdaftar dengan token penuh
       const adminQuery = `
         INSERT INTO users (username, password, role, tokens) 
@@ -75,7 +88,7 @@ if (process.env.DATABASE_URL) {
       `;
       await pool.query(adminQuery);
       
-      console.log("PostgreSQL: Tabel & Admin Versacy Berhasil Disiapkan.");
+      console.log("PostgreSQL: Tabel, Kolom History, & Admin Versacy Berhasil Disiapkan.");
     } catch (err) {
       console.error("PostgreSQL Init Error:", err);
     }
@@ -93,8 +106,11 @@ if (process.env.DATABASE_URL) {
     db.run(`CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'user', tokens INTEGER DEFAULT 10)`);
     db.run("ALTER TABLE users ADD COLUMN tokens INTEGER DEFAULT 10", (err) => {});
     db.run(`CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, soal TEXT, jawaban TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+    // Tambahan kolom subject dan level untuk SQLite jika belum ada
+    db.run("ALTER TABLE history ADD COLUMN subject TEXT", (err) => {});
+    db.run("ALTER TABLE history ADD COLUMN level TEXT", (err) => {});
   });
-  console.log("Menggunakan SQLite (Mode Lokal).");
+  console.log("Menggunakan SQLite (Mode Lokal) dengan kolom History lengkap.");
 }
 
 module.exports = db;
