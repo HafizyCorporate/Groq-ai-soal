@@ -9,9 +9,125 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
+
+        /* --- STYLE ANIMASI SPLASH SCREEN --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: all 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .splash-content {
+            text-align: center;
+            animation: focusIn 1s ease-out both;
+        }
+
+        .splash-emoji {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: heartBeat 2s infinite;
+        }
+
+        .splash-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -3px;
+            margin: 0;
+            color: #1a1a1a;
+            font-style: italic;
+        }
+
+        .splash-ai {
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .splash-slogan {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            color: #64748b;
+            margin-top: 10px;
+            font-size: 12px;
+            animation: slideUp 1.2s ease-out 0.3s both;
+        }
+
+        .splash-loader {
+            width: 200px;
+            height: 4px;
+            background: #f1f5f9;
+            margin: 40px auto 0;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .splash-progress {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #7c3aed);
+            animation: loadingAnim 2.5s ease-in-out forwards;
+            transform-origin: left;
+        }
+
+        @keyframes focusIn {
+            0% { filter: blur(12px); opacity: 0; transform: scale(1.2); }
+            100% { filter: blur(0); opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+        }
+
+        @keyframes loadingAnim {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+
+        .splash-hidden {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            transform: translateY(-100%) !important;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-6">
+
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-emoji">🤝</div>
+            <h1 class="splash-title">SOAL <span class="splash-ai">AI</span></h1>
+            <p class="splash-slogan">GuruBantuGuru</p>
+            <div class="splash-loader">
+                <div class="splash-progress"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.classList.add('splash-hidden');
+            }, 2800);
+        });
+    </script>
     <div class="mb-10 text-center">
         <h1 class="text-6xl font-[900] italic tracking-tighter text-[#1a1a1a]">
             SOAL <span class="text-blue-600">AI</span>
