@@ -127,7 +127,7 @@
 
                         <div>
                             <label class="text-[13px] font-black uppercase text-gray-500 ml-2 mb-2 block">Jumlah Soal</label>
-                            <input type="number" id="count" placeholder="Maksimal 15" value="5"
+                            <input type="number" id="count" placeholder="Maksimal 20" value="5"
                                 class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all">
                         </div>
 
@@ -227,9 +227,20 @@
 
         async function generateSoal(type) {
             const subject = document.getElementById('subject').value;
-            const count = document.getElementById('count').value;
+            const count = parseInt(document.getElementById('count').value);
             const level = document.getElementById('level').value;
             
+            // VALIDASI MAXIMAL 20 SOAL
+            if(count > 20) {
+                return Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Batas Maksimal Terlampaui', 
+                    text: 'Mohon maaf Bapak/Ibu, maksimal pembuatan soal dalam satu kali proses adalah 20 soal untuk menjaga kualitas hasil AI.', 
+                    confirmButtonColor: '#0d1117',
+                    borderRadius: '25px'
+                });
+            }
+
             const camFiles = document.getElementById('cameraInput').files;
             const regularFiles = document.getElementById('fileInput').files;
             const filesToSend = camFiles.length > 0 ? camFiles : regularFiles;
@@ -353,7 +364,6 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        // --- FUNGSI WORD YANG SUDAH DIRAPIKAN TOTAL ---
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
@@ -362,7 +372,6 @@
             const level = document.getElementById('level').value || '-';
             const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-            // Mengambil teks soal per baris agar spasi bisa diatur
             const soalElement = document.getElementById('soalContent');
             const lines = soalElement.innerText.split('\n').filter(line => line.trim() !== '');
 
@@ -371,17 +380,15 @@
             const doc = new Document({
                 sections: [{
                     properties: {
-                        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // Margin 1 inci
+                        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
                     },
                     children: [
-                        // KOP SURAT
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
                         new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 18 })] }),
                         new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
 
-                        // TABEL IDENTITAS RAPI
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE },
                             borders: BorderStyle.NONE,
@@ -406,7 +413,6 @@
                         }),
                         new Paragraph({ text: "", spacing: { after: 300 } }),
 
-                        // ISI SOAL
                         ...lines.map(line => {
                             const isOption = /^[A-E]\./.test(line.trim());
                             return new Paragraph({
@@ -418,7 +424,6 @@
 
                         new Paragraph({ text: "", spacing: { after: 600 } }),
 
-                        // TANDA TANGAN RAPI
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE },
                             borders: BorderStyle.NONE,
@@ -447,7 +452,7 @@
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word sudah rapi sekarang.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh.', timer: 2000, showConfirmButton: false });
             });
         }
 
