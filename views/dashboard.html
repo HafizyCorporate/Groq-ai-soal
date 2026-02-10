@@ -400,10 +400,9 @@
                                 </tr>
                             </table>
 
-                            <div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
-                                ${data.result}
-                            </div>
-
+                            <<div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
+    ${data.result.replace(/```html|```/g, '')}
+</div>
                             <div id="signatureArea" style="margin-top: 60px; font-size: 12pt;">
                                 <table style="width: 100%; border: none; border-collapse: collapse;">
                                     <tr style="border: none;">
