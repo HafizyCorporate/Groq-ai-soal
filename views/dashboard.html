@@ -145,7 +145,7 @@
 
                         <div class="grid grid-cols-2 gap-3 mt-4">
                             <button onclick="handleCamera()" class="flex flex-col items-center justify-center gap-2 bg-blue-50 text-blue-600 p-5 rounded-3xl hover:bg-blue-600 hover:text-white transition-all border border-blue-100 group">
-                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812-1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                                 <span class="text-[11px] font-black uppercase tracking-tighter">Kamera</span>
                             </button>
                             
@@ -216,7 +216,7 @@
     </main>
 
     <script>
-        // FUNGSI BARU: ADMIN TAMBAH TOKEN
+        // FUNGSI ADMIN TAMBAH TOKEN
         async function adminAddToken() {
             const email = document.getElementById('adminEmailTarget').value;
             const tokens = document.getElementById('adminTokenPackage').value;
@@ -308,7 +308,6 @@
             const count = parseInt(document.getElementById('count').value);
             const level = document.getElementById('level').value;
             
-            // VALIDASI MAXIMAL 20 SOAL
             if(count > 20) {
                 return Swal.fire({ 
                     icon: 'error', 
@@ -450,10 +449,17 @@
             const level = document.getElementById('level').value || '-';
             const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
+            // MENGAMBIL HANYA BAGIAN DALAM NASKAH (Menghindari elemen navigasi/token luar)
             const soalElement = document.getElementById('soalContent');
-            const lines = soalElement.innerText.split('\n').filter(line => line.trim() !== '');
+            const fullText = soalElement.innerText;
 
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
+            const splitRegex = /(Kunci Jawaban:|Jawaban:|KUNCI JAWABAN|Kunci:)/i;
+            const parts = fullText.split(splitRegex);
+            
+            const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
+            const linesKunci = parts.length > 1 ? (parts[1] + parts[2]).split('\n').filter(line => line.trim() !== '') : [];
+
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, PageBreak } = docx;
 
             const doc = new Document({
                 sections: [{
@@ -491,7 +497,7 @@
                         }),
                         new Paragraph({ text: "", spacing: { after: 300 } }),
 
-                        ...lines.map(line => {
+                        ...linesSoal.map(line => {
                             const isOption = /^[A-E]\./.test(line.trim());
                             return new Paragraph({
                                 children: [new TextRun({ text: line, size: 24 })],
@@ -523,14 +529,27 @@
                                     ]
                                 })
                             ]
-                        })
+                        }),
+
+                        ...(linesKunci.length > 0 ? [
+                            new Paragraph({ children: [new PageBreak()] }),
+                            new Paragraph({
+                                alignment: AlignmentType.CENTER,
+                                children: [new TextRun({ text: "KUNCI JAWABAN (KHUSUS GURU)", bold: true, size: 26, underline: {} })],
+                                spacing: { after: 400 }
+                            }),
+                            ...linesKunci.map(line => new Paragraph({
+                                children: [new TextRun({ text: line, size: 22 })],
+                                spacing: { after: 100 }
+                            }))
+                        ] : [])
                     ]
                 }]
             });
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word telah diunduh (Tanpa Token).', timer: 2000, showConfirmButton: false });
             });
         }
 
