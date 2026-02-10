@@ -53,7 +53,6 @@ app.use("/uploads", express.static(uploadDir));
 
 // --- MIDDLEWARE PERLINDUNGAN ADMIN ---
 const isAdmin = (req, res, next) => {
-    // GANTI email di bawah ini dengan email admin Anda
     const ADMIN_EMAIL = "monetsoleh@gmail.com"; 
 
     if (req.session.user && req.session.user.email === ADMIN_EMAIL) {
@@ -85,24 +84,17 @@ app.post("/admin/add-token", isAdmin, async (req, res) => {
     try {
         const query = `
             UPDATE users 
-            SET tokens = COALESCE(tokens, 0) + $1 
-            WHERE email ILIKE $2 
-            RETURNING email, tokens
+            SET tokens = COALESCE(tokens, 0) + ? 
+            WHERE email ILIKE ?
         `;
         
-        const result = await db.query(query, [parseInt(tokens), email.trim()]);
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, message: "User tidak ditemukan." });
-        }
-
-        res.json({ 
-            success: true, 
-            message: `Berhasil menambahkan ${tokens} token ke ${result.rows[0].email}` 
+        db.run(query, [parseInt(tokens), email.trim()], (err) => {
+            if (err) throw err;
+            res.json({ success: true, message: `Berhasil menambahkan token.` });
         });
     } catch (error) {
         console.error("Admin Token Error:", error);
-        res.status(500).json({ success: false, message: "Gagal memperbarui token di database." });
+        res.status(500).json({ success: false, message: "Gagal memperbarui token." });
     }
 });
 
@@ -129,23 +121,22 @@ app.get("/dashboard", (req, res) => {
     res.sendFile(path.join(__dirname, "views/dashboard.html"));
 });
 
-// --- RUTE TAMBAHAN UNTUK HISTORY ---
 app.get("/ai/history_page", (req, res) => {
     if (!req.session.user) return res.redirect("/");
     res.sendFile(path.join(__dirname, "views/history.html"));
 });
 
 // ==========================================
-// 6. LOGIKA FORGOT PASSWORD (DENGAN KODE OTP)
+// 6. LOGIKA FORGOT PASSWORD (DIPERBAIKI UNTUK DB.JS)
 // ==========================================
 app.post("/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
     const db = require("./db"); 
 
-    db.query("SELECT email FROM users WHERE email = $1", [email], async (err, result) => {
-        const user = result?.rows ? result.rows[0] : null;
-        
+    // MENGGUNAKAN db.get agar sesuai dengan db.js
+    db.get("SELECT email FROM users WHERE LOWER(email) = LOWER(?)", [email], async (err, user) => {
         if (err) {
+            console.error("Database error:", err);
             return res.status(500).json({ success: false, error: "Database error." });
         }
 
@@ -192,11 +183,10 @@ app.post("/auth/forgot-password", async (req, res) => {
 });
 
 // ==========================================
-// 7. RUTE VERIFIKASI OTP & UPDATE PASSWORD
+// 7. RUTE VERIFIKASI OTP (DIPERBAIKI UNTUK DB.JS)
 // ==========================================
 app.post("/auth/reset-password", async (req, res) => {
     const { email, otp, newPassword } = req.body;
-    const bcrypt = require("bcrypt");
     const db = require("./db"); 
 
     const record = otpStorage[email];
@@ -211,10 +201,14 @@ app.post("/auth/reset-password", async (req, res) => {
     }
 
     try {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await db.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
-        delete otpStorage[email]; 
-        res.json({ success: true, message: "Password berhasil dirubah!" });
+        // MENGGUNAKAN db.run sesuai fungsi di db.js
+        db.run("UPDATE users SET password = ? WHERE LOWER(email) = LOWER(?)", [newPassword, email], (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, error: "Gagal memperbarui password." });
+            }
+            delete otpStorage[email]; 
+            res.json({ success: true, message: "Password berhasil dirubah!" });
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: "Terjadi kesalahan sistem." });
     }
