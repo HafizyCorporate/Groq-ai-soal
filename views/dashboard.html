@@ -448,7 +448,7 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        /* UPDATE: Export Word dengan Kunci Jawaban di Bawah Tanda Tangan & Spasi Rapat */
+        /* PERBAIKAN: Fungsi Export Word untuk deteksi kunci jawaban yang lebih akurat */
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
@@ -459,19 +459,15 @@
 
             const soalElement = document.getElementById('soalContent');
             
-            let rawLines = soalElement.innerText.split('\n');
-            let filteredLines = rawLines.filter(line => {
-                const lowerLine = line.toLowerCase();
-                if (lowerLine.includes("token")) return false;
-                return true;
-            });
+            let fullText = soalElement.innerText;
 
-            let fullTextCleaned = filteredLines.join('\n');
-            const splitRegex = /(Kunci Jawaban:|Jawaban:|KUNCI JAWABAN|Kunci:)/i;
-            const parts = fullTextCleaned.split(splitRegex);
+            // Regex diperkuat untuk mendeteksi berbagai kemungkinan penulisan kunci jawaban
+            const splitRegex = /(?:\n|^)(?:Kunci Jawaban|Jawaban|KUNCI JAWABAN|Kunci|Kunci:)\s*:?/i;
+            const parts = fullText.split(splitRegex);
             
             const linesSoal = parts[0].split('\n').filter(line => line.trim() !== '');
-            const linesKunci = parts.length > 1 ? (parts[1] + parts[2]).split('\n').filter(line => line.trim() !== '') : [];
+            // Jika ada bagian setelah pemisah, itu adalah kunci jawaban
+            const linesKunci = parts.length > 1 ? parts.slice(1).join('\n').split('\n').filter(line => line.trim() !== '') : [];
 
             const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
 
@@ -501,9 +497,9 @@
                         }),
                         new Paragraph({ text: "", spacing: { after: 300 } }),
 
-                        // ISI SOAL (DENGAN LOGIKA SPASI RAPAT)
+                        // ISI SOAL
                         ...linesSoal.map(line => {
-                            const isOption = /^[A-E]\./.test(line.trim()); // Deteksi A,B,C,D
+                            const isOption = /^[A-E]\./i.test(line.trim()); 
                             return new Paragraph({
                                 children: [new TextRun({ text: line, size: 24 })],
                                 spacing: { before: isOption ? 0 : 150, line: 300 },
@@ -534,7 +530,7 @@
                             ]
                         }),
 
-                        // KUNCI JAWABAN (OTOMATIS DI BAWAH)
+                        // KUNCI JAWABAN (OTOMATIS MUNCUL JIKA ADA)
                         ...(linesKunci.length > 0 ? [
                             new Paragraph({ text: "", spacing: { before: 800 } }),
                             new Paragraph({
