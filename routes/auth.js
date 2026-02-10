@@ -1,15 +1,28 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db");
-const path = require("path"); // Ditambahkan untuk menghandle path file html
+const path = require("path");
 
 router.post("/login", (req, res) => {
     const { email, password } = req.body; 
     
-    db.get("SELECT * FROM users WHERE (email = ? OR username = ?) AND password = ?", 
-    [email, email, password], (err, user) => {
-        if (err) return res.status(500).json({ error: "Database Error" });
-        if (!user) return res.status(401).json({ error: "Akun tidak ditemukan atau password salah" });
+    // PERBAIKAN: Menggunakan Query yang lebih kuat untuk Postgres
+    // Kita cari berdasarkan Email ATAU Username secara Case-Insensitive (tidak peduli huruf besar/kecil)
+    const loginQuery = `
+        SELECT * FROM users 
+        WHERE (LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)) 
+        AND password = ?
+    `;
+    
+    db.get(loginQuery, [email, email, password], (err, user) => {
+        if (err) {
+            console.error("Login Database Error:", err);
+            return res.status(500).json({ error: "Database Error" });
+        }
+        
+        if (!user) {
+            return res.status(401).json({ error: "Akun tidak ditemukan atau password salah" });
+        }
         
         req.session.user = {
             id: user.id,
@@ -25,11 +38,11 @@ router.post("/register", (req, res) => {
     const { email, password } = req.body;
     const username = email.split('@')[0];
 
-    db.get("SELECT email FROM users WHERE email = ?", [email], (err, row) => {
+    db.get("SELECT email FROM users WHERE LOWER(email) = LOWER(?)", [email], (err, row) => {
         if (err) return res.status(500).json({ error: "Database Error" });
         if (row) return res.status(400).json({ error: "Email sudah terdaftar" });
 
-        db.run("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, 'user')", 
+        db.run("INSERT INTO users (username, email, password, role, tokens) VALUES (?, ?, ?, 'user', 10)", 
         [username, email, password], (err) => {
             if (err) {
                 console.error("Register Error:", err);
@@ -40,7 +53,6 @@ router.post("/register", (req, res) => {
     });
 });
 
-// --- TAMBAHAN RUTE /ME UNTUK INFO TOKEN ---
 router.get("/me", (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({ success: false, error: "Belum login" });
@@ -52,7 +64,6 @@ router.get("/me", (req, res) => {
     });
 });
 
-// --- TAMBAHAN RUTE HALAMAN ADMIN ---
 router.get("/admin_page", (req, res) => {
     if (!req.session.user || req.session.user.role !== 'admin') {
         return res.status(403).send("Akses dilarang! Area ini khusus Admin.");
@@ -60,7 +71,6 @@ router.get("/admin_page", (req, res) => {
     res.sendFile(path.join(__dirname, "../views/admin.html"));
 });
 
-// --- TAMBAHAN RUTE API ADMIN (AMBIL & UPDATE USER) ---
 router.get("/admin/users", (req, res) => {
     if (!req.session.user || req.session.user.role !== 'admin') return res.status(403).json({ success: false });
     db.all("SELECT id, username, email, tokens, role FROM users ORDER BY id DESC", [], (err, rows) => {
