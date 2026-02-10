@@ -353,7 +353,7 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        // FUNGSI EKSPOR WORD ASLI (NATIVE DOCX)
+        // --- FUNGSI WORD YANG SUDAH DIRAPIKAN TOTAL ---
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
             if (!printableArea) return;
@@ -362,115 +362,92 @@
             const level = document.getElementById('level').value || '-';
             const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-            // Mengambil teks soal saja agar tidak membawa sampah HTML
-            const soalText = document.getElementById('soalContent').innerText;
+            // Mengambil teks soal per baris agar spasi bisa diatur
+            const soalElement = document.getElementById('soalContent');
+            const lines = soalElement.innerText.split('\n').filter(line => line.trim() !== '');
 
             const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
 
             const doc = new Document({
                 sections: [{
-                    properties: {},
+                    properties: {
+                        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // Margin 1 inci
+                    },
                     children: [
                         // KOP SURAT
-                        new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 28 }),
-                            ],
-                        }),
-                        new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 32 }),
-                            ],
-                        }),
-                        new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 32 }),
-                            ],
-                        }),
-                        new Paragraph({
-                            alignment: AlignmentType.CENTER,
-                            children: [
-                                new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 20 }),
-                            ],
-                        }),
-                        new Paragraph({ text: "", border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } } }),
-                        new Paragraph({ text: "", spacing: { after: 200 } }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
+                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 18 })] }),
+                        new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
 
-                        // TABEL IDENTITAS
+                        // TABEL IDENTITAS RAPI
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            borders: BorderStyle.NONE,
                             rows: [
                                 new TableRow({
                                     children: [
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ..........................", bold: true, size: 22 })] })] }),
-                                    ],
+                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 20 })] })] }),
+                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 20 })] })] }),
+                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 20 })] })] }),
+                                        new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: ": ....................", bold: true, size: 20 })] })] }),
+                                    ]
                                 }),
                                 new TableRow({
                                     children: [
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 22 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 22 })] })] }),
-                                    ],
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 20 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 20 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 20 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 20 })] })] }),
+                                    ]
                                 }),
-                            ],
+                            ]
                         }),
-                        new Paragraph({ text: "", spacing: { after: 400 } }),
+                        new Paragraph({ text: "", spacing: { after: 300 } }),
 
-                        // ISI SOAL (TEXT ASLI)
-                        ...soalText.split('\n').map(line => {
+                        // ISI SOAL
+                        ...lines.map(line => {
+                            const isOption = /^[A-E]\./.test(line.trim());
                             return new Paragraph({
                                 children: [new TextRun({ text: line, size: 24 })],
-                                spacing: { after: 120 },
+                                spacing: { before: isOption ? 0 : 200, line: 360 },
                                 alignment: AlignmentType.JUSTIFY
                             });
                         }),
 
-                        new Paragraph({ text: "", spacing: { after: 800 } }),
+                        new Paragraph({ text: "", spacing: { after: 600 } }),
 
-                        // TANDA TANGAN
+                        // TANDA TANGAN RAPI
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            borders: BorderStyle.NONE,
                             rows: [
                                 new TableRow({
                                     children: [
-                                        new TableCell({ 
-                                            children: [
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 24 })] }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 24 })] }),
-                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
-                                            ] 
-                                        }),
-                                        new TableCell({ 
-                                            children: [
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 24 })] }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 24 })] }),
-                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
-                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
-                                            ] 
-                                        }),
-                                    ],
-                                }),
-                            ],
-                        }),
-                    ],
-                }],
+                                        new TableCell({ children: [
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 22 })] }),
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 22 })] }),
+                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
+                                        ] }),
+                                        new TableCell({ children: [
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 22 })] }),
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 22 })] }),
+                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
+                                        ] }),
+                                    ]
+                                })
+                            ]
+                        })
+                    ]
+                }]
             });
 
             Packer.toBlob(doc).then(blob => {
                 saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word asli telah diunduh.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word sudah rapi sekarang.', timer: 2000, showConfirmButton: false });
             });
         }
 
