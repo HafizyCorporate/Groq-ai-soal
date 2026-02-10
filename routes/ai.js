@@ -38,7 +38,6 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     });
 
     if (!user || user.tokens <= 0) {
-      // Hapus file yang sudah terlanjur diupload agar tidak memenuhi server
       if (req.files) {
         req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
       }
@@ -104,9 +103,10 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
       function(errUpdate) {
         if (errUpdate) console.error("Gagal potong token:", errUpdate);
 
+        // BAGIAN YANG DIUBAH: Menambahkan subject dan level ke dalam database history
         db.run(
-          "INSERT INTO history (user_id, soal, jawaban, created_at) VALUES (?,?,?, CURRENT_TIMESTAMP)",
-          [userId, teksSoal, teksJawaban],
+          "INSERT INTO history (user_id, soal, jawaban, subject, level, created_at) VALUES (?,?,?,?,?, CURRENT_TIMESTAMP)",
+          [userId, teksSoal, teksJawaban, subject, level],
           function (err) {
             if (req.files) {
               req.files.forEach(file => { if (fs.existsSync(file.path)) fs.unlinkSync(file.path); });
@@ -149,7 +149,8 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
 router.get("/history", (req, res) => {
   if (!req.session.user) return res.status(401).json({ success: false });
   const userId = req.session.user.id;
-  db.all("SELECT id, soal, created_at FROM history WHERE user_id = ? ORDER BY created_at DESC", [userId], (err, rows) => {
+  // Menambahkan subject dan level agar bisa muncul di list riwayat
+  db.all("SELECT id, soal, subject, level, created_at FROM history WHERE user_id = ? ORDER BY created_at DESC", [userId], (err, rows) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
     res.json({ success: true, rows });
   });
