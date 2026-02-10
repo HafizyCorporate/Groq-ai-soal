@@ -51,6 +51,21 @@ app.use(session({
 app.use(express.static("public"));
 app.use("/uploads", express.static(uploadDir));
 
+// --- MIDDLEWARE PERLINDUNGAN ADMIN ---
+const isAdmin = (req, res, next) => {
+    // GANTI email di bawah ini dengan email admin Anda
+    const ADMIN_EMAIL = "monetsoleh@gmail.com"; 
+
+    if (req.session.user && req.session.user.email === ADMIN_EMAIL) {
+        next();
+    } else {
+        res.status(403).json({ 
+            success: false, 
+            message: "Akses Ditolak: Anda bukan Admin yang berwenang." 
+        });
+    }
+};
+
 // ==========================================
 // 4. ROUTES API (Auth, AI, Export)
 // ==========================================
@@ -58,18 +73,16 @@ app.use("/auth", require("./routes/auth"));
 app.use("/ai", require("./routes/ai"));
 app.use("/export", require("./routes/export"));
 
-// --- FITUR ADMIN: TAMBAH TOKEN (POSTGRESQL) ---
-app.post("/admin/add-token", async (req, res) => {
+// --- FITUR ADMIN: TAMBAH TOKEN (DILINDUNGI MIDDLEWARE) ---
+app.post("/admin/add-token", isAdmin, async (req, res) => {
     const { email, tokens } = req.body;
-    const db = require("./db"); // Memastikan menggunakan koneksi pool postgres anda
+    const db = require("./db"); 
 
     if (!email || !tokens) {
         return res.status(400).json({ success: false, message: "Data tidak lengkap." });
     }
 
     try {
-        // Query PostgreSQL untuk menambah token berdasarkan email
-        // ILIKE digunakan agar pencarian email tidak case-sensitive
         const query = `
             UPDATE users 
             SET tokens = COALESCE(tokens, 0) + $1 
@@ -127,10 +140,8 @@ app.get("/ai/history_page", (req, res) => {
 // ==========================================
 app.post("/auth/forgot-password", async (req, res) => {
     const { email } = req.body;
-    const db = require("./db"); // Memastikan db dipanggil untuk pengecekan
+    const db = require("./db"); 
 
-    // Cek apakah email terdaftar di database sebelum kirim OTP
-    // Note: Jika db anda sudah pindah ke Postgres, ganti db.get ke db.query
     db.query("SELECT email FROM users WHERE email = $1", [email], async (err, result) => {
         const user = result?.rows ? result.rows[0] : null;
         
@@ -201,7 +212,6 @@ app.post("/auth/reset-password", async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        // Menggunakan syntax Postgres ($1, $2)
         await db.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
         delete otpStorage[email]; 
         res.json({ success: true, message: "Password berhasil dirubah!" });
@@ -222,7 +232,7 @@ app.listen(PORT, () => {
 🤖 AI MODEL  : Gemini 2.5 Flash (Active)
 🔗 RUTE      : /forget (Ready)
 🔗 HISTORY   : /ai/history_page (Ready)
-🔗 ADMIN     : /admin/add-token (Ready - Postgres)
+🔗 ADMIN     : /admin/add-token (Protected - Ready)
 =============================================
     `);
 });
