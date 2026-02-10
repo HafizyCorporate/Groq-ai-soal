@@ -7,7 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
+    
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
@@ -291,7 +293,7 @@
                                 </tr>
                             </table>
 
-                            <div style="font-size: 12pt; text-align: justify; line-height: 1.8;">
+                            <div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
                                 ${data.result}
                             </div>
 
@@ -351,52 +353,125 @@
             html2pdf().set(opt).from(element).save();
         }
 
+        // FUNGSI EKSPOR WORD ASLI (NATIVE DOCX)
         function exportToWord() {
             const printableArea = document.getElementById('printableArea');
+            if (!printableArea) return;
+
             const subject = document.getElementById('subject').value || 'Soal_AI';
-            
-            if (!printableArea) {
-                return Swal.fire({ 
-                    icon: 'warning', 
-                    title: 'Gagal', 
-                    text: 'Silakan buat soal terlebih dahulu!',
-                    borderRadius: '25px' 
-                });
-            }
+            const level = document.getElementById('level').value || '-';
+            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-            // CSS Khusus untuk Word agar Kop Surat tetap di tengah dan Tabel Rapi
-            const styles = `
-                <style>
-                    body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-                    .text-center { text-align: center; }
-                    table { width: 100%; border-collapse: collapse; border: none; }
-                    td { vertical-align: top; border: none; padding: 2px; }
-                    p { margin-bottom: 10px; text-align: justify; line-height: 1.5; }
-                    h1, h2, h3 { text-align: center; margin: 0; }
-                </style>
-            `;
+            // Mengambil teks soal saja agar tidak membawa sampah HTML
+            const soalText = document.getElementById('soalContent').innerText;
 
-            // Proses Konversi ke DOCX asli menggunakan library html-docx
-            const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">${styles}</head><body>${printableArea.innerHTML}</body></html>`;
-            
-            // Mengubah HTML menjadi Blob DOCX asli
-            try {
-                const converted = htmlDocx.asBlob(fullHtml);
-                const fileName = `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`;
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
 
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(converted);
-                link.download = fileName;
-                document.body.appendChild(link);
-                link.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(link.href);
-                }, 100);
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'Oops', text: 'Gagal ekspor ke Word.', borderRadius: '25px' });
-            }
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        // KOP SURAT
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 28 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 32 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 32 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 20 }),
+                            ],
+                        }),
+                        new Paragraph({ text: "", border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } } }),
+                        new Paragraph({ text: "", spacing: { after: 200 } }),
+
+                        // TABEL IDENTITAS
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ..........................", bold: true, size: 22 })] })] }),
+                                    ],
+                                }),
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 22 })] })] }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                        new Paragraph({ text: "", spacing: { after: 400 } }),
+
+                        // ISI SOAL (TEXT ASLI)
+                        ...soalText.split('\n').map(line => {
+                            return new Paragraph({
+                                children: [new TextRun({ text: line, size: 24 })],
+                                spacing: { after: 120 },
+                                alignment: AlignmentType.JUSTIFY
+                            });
+                        }),
+
+                        new Paragraph({ text: "", spacing: { after: 800 } }),
+
+                        // TANDA TANGAN
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ 
+                                            children: [
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 24 })] }),
+                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
+                                            ] 
+                                        }),
+                                        new TableCell({ 
+                                            children: [
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 24 })] }),
+                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
+                                            ] 
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word asli telah diunduh.', timer: 2000, showConfirmButton: false });
+            });
         }
 
         function confirmLogout() {
