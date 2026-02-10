@@ -7,48 +7,152 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #f8faff; color: #1a1a1a; }
-        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); }
-        #outputContent { max-height: 850px; overflow-y: auto; overflow-x: hidden; padding: 5px; width: 100%; }
-        .naskah-ujian { font-family: 'Times New Roman', Times, serif !important; color: black !important; background: white; padding: 30px; border: 1px solid #e5e7eb; font-size: 12pt !important; line-height: 1.6; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.05); box-sizing: border-box; }
-        .naskah-ujian p { margin-bottom: 25px !important; text-align: justify; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: #f8faff; 
+            color: #1a1a1a;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        /* --- PERBAIKAN JENDELA PREVIEW --- */
+        #outputContent {
+            max-height: 850px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 5px;
+            scrollbar-width: thin;
+            scrollbar-color: #2563eb #f8faff;
+            width: 100%;
+        }
+
+        #outputContent::-webkit-scrollbar { width: 6px; }
+        #outputContent::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        .naskah-ujian {
+            font-family: 'Times New Roman', Times, serif !important;
+            color: black !important;
+            background: white;
+            padding: 30px;
+            border: 1px solid #e5e7eb;
+            font-size: 12pt !important;
+            line-height: 1.6;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        .naskah-ujian p, .naskah-ujian div {
+            margin-bottom: 25px !important; 
+            text-align: justify;
+        }
+
+        .naskah-ujian br {
+            content: "";
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        @media (min-width: 1024px) {
+            .naskah-ujian {
+                padding: 60px;
+                font-size: 13pt !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen">
+
     <nav class="flex flex-col sm:flex-row items-center justify-between px-6 py-4 sm:px-8 sm:py-6 max-w-[1600px] mx-auto gap-4">
-        <h1 class="text-2xl sm:text-3xl font-[900] italic tracking-tighter">SOAL<span class="text-blue-600">AI</span></h1>
+        <h1 class="text-2xl sm:text-3xl font-[900] italic tracking-tighter">
+            SOAL<span class="text-blue-600">AI</span>
+        </h1>
         <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-4">
             <div class="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-2xl shadow-lg cursor-pointer" onclick="updateTokenDisplay()">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 11V5a1 1 0 112 0v6a1 1 0 11-2 0zM11 14a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
                 <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest">Token: <span id="tokenDisplay">...</span></span>
             </div>
-            <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">Riwayat</button>
-            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">Keluar</button>
+            
+            <button onclick="window.location.href='/ai/history_page'" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-blue-100 transition-all duration-300">
+                Riwayat
+            </button>
+            <button onclick="confirmLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">
+                Keluar
+            </button>
         </div>
     </nav>
 
     <main class="max-w-[1600px] mx-auto px-6 py-8">
+        <div class="mb-10">
+            <h2 class="text-3xl sm:text-4xl font-black tracking-tight mb-2">Selamat Datang Bapak/Ibu Guru! 👋</h2>
+            <p class="text-gray-600 font-semibold text-base sm:text-lg">Mari susun soal ujian berkualitas dengan bantuan teknologi kecerdasan buatan.</p>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div class="lg:col-span-1 space-y-6">
                 <div class="glass-card p-8 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
                     <h3 class="text-blue-600 font-black text-sm uppercase tracking-[0.2em] mb-6">Konfigurasi Soal</h3>
+                    
                     <div class="space-y-5">
-                        <input type="text" id="subject" placeholder="Mata Pelajaran" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all">
-                        <select id="level" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer">
-                            <option value="SD Kelas 1-3">SD Kelas 1-3</option>
-                            <option value="SD Kelas 4-6">SD Kelas 4-6</option>
-                            <option value="SMP Kelas 7-9">SMP Kelas 7-9</option>
-                            <option value="SMA Kelas 10-12">SMA Kelas 10-12</option>
-                        </select>
-                        <input type="number" id="count" value="5" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold">
-                        <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFile(this)" multiple>
-                        <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)" multiple>
+                        <div>
+                            <label class="text-[13px] font-black uppercase text-gray-500 ml-2 mb-2 block">Mata Pelajaran</label>
+                            <input type="text" id="subject" placeholder="Misal: Ilmu Pengetahuan Alam" 
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all">
+                        </div>
+
+                        <div>
+                            <label class="text-[13px] font-black uppercase text-gray-500 ml-2 mb-2 block">Jenjang & Tingkat Kelas</label>
+                            <select id="level" class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all cursor-pointer">
+                                <optgroup label="Sekolah Dasar (SD)">
+                                    <option value="SD Kelas 1-3">SD Kelas 1, 2, 3</option>
+                                    <option value="SD Kelas 4-6">SD Kelas 4, 5, 6</option>
+                                </optgroup>
+                                <optgroup label="Sekolah Menengah Pertama (SMP)">
+                                    <option value="SMP Kelas 7-9">SMP Kelas 7, 8, 9</option>
+                                </optgroup>
+                                <optgroup label="Sekolah Menengah Atas (SMA)">
+                                    <option value="SMA Kelas 10-12">SMA Kelas 10, 11, 12</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[13px] font-black uppercase text-gray-500 ml-2 mb-2 block">Jumlah Soal</label>
+                            <input type="number" id="count" placeholder="Maksimal 15" value="5"
+                                class="w-full bg-[#eff4ff] border-none py-4 px-6 rounded-2xl text-gray-800 text-lg outline-none font-bold focus:ring-2 focus:ring-blue-400 transition-all">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <button onclick="handleCamera()" class="flex flex-col items-center justify-center gap-2 bg-blue-50 text-blue-600 p-5 rounded-3xl hover:bg-blue-600 hover:text-white transition-all border border-blue-100 group">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                                <span class="text-[11px] font-black uppercase tracking-tighter">Kamera</span>
+                            </button>
+                            
+                            <label onclick="document.getElementById('fileInput').click()" class="flex flex-col items-center justify-center gap-2 bg-purple-50 text-purple-600 p-5 rounded-3xl hover:bg-purple-600 hover:text-white transition-all border border-purple-100 cursor-pointer">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span class="text-[11px] font-black uppercase tracking-tighter text-center">Lampiran File</span>
+                            </label>
+
+                            <input type="file" id="cameraInput" class="hidden" accept="image/*" capture="environment" onchange="handleFile(this)" multiple>
+                            <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFile(this)" multiple>
+                        </div>
+
                         <div class="pt-4 space-y-3">
-                            <button onclick="generateSoal('Pilihan Ganda')" class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl shadow-xl hover:bg-black transition-all uppercase text-[12px] tracking-widest">Buat Pilihan Ganda</button>
+                            <button onclick="generateSoal('Pilihan Ganda')" class="w-full bg-[#0d1117] text-white font-black py-5 rounded-2xl shadow-xl hover:bg-black transition-all active:scale-95 uppercase text-[12px] tracking-widest">
+                                Buat Pilihan Ganda
+                            </button>
+                            <button onclick="generateSoal('Essay')" class="w-full bg-white text-blue-600 border-2 border-blue-600 font-black py-5 rounded-2xl hover:bg-blue-50 transition-all active:scale-95 uppercase text-[12px] tracking-widest">
+                                Buat Soal Essay
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -57,12 +161,18 @@
             <div class="lg:col-span-3">
                 <div id="resultArea" class="glass-card min-h-[600px] p-6 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.02)] relative">
                     <div id="exportToolbar" class="hidden flex justify-end gap-3 mb-8">
-                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black shadow-md">Unduh PDF</button>
-                        <button onclick="exportToWord()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 shadow-md">Unduh Word</button>
+                        <button onclick="exportToPDF()" class="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-md">Unduh PDF</button>
+                        <button onclick="exportToWord()" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md">Unduh Word</button>
                     </div>
+
                     <div id="placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-10">
-                        <h4 class="text-2xl font-extrabold mb-2 text-gray-400">Hasil Soal Akan Muncul di Sini</h4>
+                        <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        </div>
+                        <h4 class="text-2xl font-extrabold mb-2">Hasil Soal Akan Muncul di Sini</h4>
+                        <p class="text-gray-500 text-lg max-w-sm font-medium">Silakan lengkapi konfigurasi di samping dan klik tombol generate untuk melihat draf soal ujian Anda.</p>
                     </div>
+                    
                     <div id="outputContent" class="hidden"></div>
                 </div>
             </div>
@@ -70,26 +180,77 @@
     </main>
 
     <script>
-        // Fungsi helper untuk update token, handle file, generate tetap sama dengan kode Bapak/Ibu
-        async function updateTokenDisplay() { try { const response = await fetch('/auth/me'); const data = await response.json(); if(data.success) { document.getElementById('tokenDisplay').innerText = data.user.tokens; return data.user.tokens; } } catch (err) { console.log("Gagal"); } return 0; }
+        async function updateTokenDisplay() {
+            try {
+                const response = await fetch('/auth/me'); 
+                const data = await response.json();
+                if(data.success) {
+                    document.getElementById('tokenDisplay').innerText = data.user.tokens;
+                    return data.user.tokens;
+                }
+            } catch (err) {
+                console.log("Gagal mengambil info token");
+            }
+            return 0;
+        }
+
         updateTokenDisplay();
-        function handleFile(input) { if (input.files.length > 0) { Swal.fire({ title: 'Berhasil!', text: `${input.files.length} File siap.`, icon: 'success', confirmButtonColor: '#0d1117' }); } }
+
+        function handleCamera() {
+            document.getElementById('cameraInput').click();
+        }
+
+        function handleFile(input) {
+            const maxFiles = 10;
+            if (input.files && input.files.length > 0) {
+                if (input.files.length > maxFiles) {
+                    Swal.fire({
+                        title: 'Mohon Maaf',
+                        text: `Hanya diperbolehkan maksimal ${maxFiles} foto/file.`,
+                        icon: 'warning',
+                        confirmButtonColor: '#0d1117',
+                        borderRadius: '25px'
+                    });
+                    input.value = "";
+                    return;
+                }
+                
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: `${input.files.length} File/Foto siap diproses.`,
+                    icon: 'success',
+                    confirmButtonColor: '#0d1117',
+                    borderRadius: '25px'
+                });
+            }
+        }
 
         async function generateSoal(type) {
             const subject = document.getElementById('subject').value;
             const count = document.getElementById('count').value;
             const level = document.getElementById('level').value;
+            
             const camFiles = document.getElementById('cameraInput').files;
             const regularFiles = document.getElementById('fileInput').files;
             const filesToSend = camFiles.length > 0 ? camFiles : regularFiles;
 
-            if(!subject || !count) return Swal.fire({ icon: 'warning', title: 'Mohon Maaf', text: 'Mata Pelajaran dan Jumlah Soal wajib diisi.'});
+            if(!subject || !count) {
+                return Swal.fire({ icon: 'warning', title: 'Mohon Maaf', text: 'Mata Pelajaran dan Jumlah Soal wajib diisi.', borderRadius: '25px'});
+            }
 
             const formData = new FormData();
-            formData.append('subject', subject); formData.append('count', count); formData.append('level', level); formData.append('type', type);
+            formData.append('subject', subject);
+            formData.append('count', count);
+            formData.append('level', level);
+            formData.append('type', type);
             for (let i = 0; i < filesToSend.length; i++) { formData.append('images[]', filesToSend[i]); }
 
-            Swal.fire({ title: 'Mohon Tunggu', html: `Menyusun naskah ujian...`, allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+            Swal.fire({
+                title: 'Mohon Tunggu Sebentar',
+                html: `Kecerdasan Buatan sedang menyusun naskah ujian...`,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
 
             try {
                 const response = await fetch('/ai/generate', { method: 'POST', body: formData });
@@ -101,136 +262,88 @@
                     document.getElementById('exportToolbar').classList.remove('hidden');
                     const output = document.getElementById('outputContent');
                     output.classList.remove('hidden');
+                    
                     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                     
                     output.innerHTML = `
                         <div id="printableArea" class="naskah-ujian">
                             <div style="text-align: center; border-bottom: 4px double black; padding-bottom: 10px; margin-bottom: 25px;">
-                                <h2 style="margin: 0; font-size: 14pt;">Pemerintah Provinsi / Kota .....................</h2>
-                                <h1 style="margin: 0; font-size: 16pt;">Dinas Pendidikan dan Kebudayaan</h1>
-                                <h1 style="margin: 5px 0; font-size: 16pt;">NAMA SEKOLAH ASAL BAPAK/IBU</h1>
+                                <h2 style="margin: 0; font-size: 14pt; text-transform: uppercase;">Pemerintah Provinsi / Kota .....................</h2>
+                                <h1 style="margin: 0; font-size: 16pt; text-transform: uppercase;">Dinas Pendidikan dan Kebudayaan</h1>
+                                <h1 style="margin: 5px 0; font-size: 16pt; text-transform: uppercase;">NAMA SEKOLAH ASAL BAPAK/IBU</h1>
                                 <p style="margin: 0; font-size: 10pt; font-style: italic;">Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id</p>
                             </div>
-                            <table style="width: 100%; margin-bottom: 30px; font-size: 11pt; font-weight: bold; border: none;">
-                                <tr>
-                                    <td style="width: 25%;">MATA PELAJARAN</td><td style="width: 25%;">: ${subject.toUpperCase()}</td>
-                                    <td style="width: 25%;">HARI / TANGGAL</td><td style="width: 25%;">: ..........................</td>
+
+                            <table style="width: 100%; margin-bottom: 30px; font-size: 11pt; font-weight: bold; border-collapse: collapse; border: none;">
+                                <tr style="border: none;">
+                                    <td style="width: 22%; border:none; padding: 2px 0;">MATA PELAJARAN</td>
+                                    <td style="width: 2%; border:none; padding: 2px 0;">:</td>
+                                    <td style="width: 28%; border:none; padding: 2px 0;">${subject.toUpperCase()}</td>
+                                    <td style="width: 20%; border:none; padding: 2px 0;">HARI / TANGGAL</td>
+                                    <td style="width: 2%; border:none; padding: 2px 0;">:</td>
+                                    <td style="width: 26%; border:none; padding: 2px 0;">..........................</td>
                                 </tr>
-                                <tr>
-                                    <td>KELAS / JENJANG</td><td>: ${level}</td>
-                                    <td>WAKTU</td><td>: ........ MENIT</td>
+                                <tr style="border: none;">
+                                    <td style="border:none; padding: 2px 0;">KELAS / JENJANG</td>
+                                    <td style="border:none; padding: 2px 0;">:</td>
+                                    <td style="border:none; padding: 2px 0;">${level}</td>
+                                    <td style="border:none; padding: 2px 0;">WAKTU</td>
+                                    <td style="border:none; padding: 2px 0;">:</td>
+                                    <td style="border:none; padding: 2px 0;">........ MENIT</td>
                                 </tr>
                             </table>
-                            <div id="soalContent">${data.result}</div>
-                            <div style="margin-top: 60px;">
-                                <table style="width: 100%; border: none;">
-                                    <tr>
-                                        <td style="text-align: center; width: 45%;">Mengetahui,<br>Kepala Sekolah<br><br><br><br>( ................................ )</td>
-                                        <td style="width: 10%;"></td>
-                                        <td style="text-align: center; width: 45%;">Kota, ${today}<br>Guru Mata Pelajaran<br><br><br><br>( ................................ )</td>
+
+                            <div id="soalContent" style="font-size: 12pt; text-align: justify; line-height: 1.8;">
+                                ${data.result}
+                            </div>
+
+                            <div style="margin-top: 60px; font-size: 12pt;">
+                                <table style="width: 100%; border: none; border-collapse: collapse;">
+                                    <tr style="border: none;">
+                                        <td style="text-align: center; width: 45%; border:none; vertical-align: top;">
+                                            Mengetahui,<br>Kepala Sekolah<br><br><br><br><br>
+                                            ( ................................ )<br>NIP. ............................
+                                        </td>
+                                        <td style="width: 10%; border:none;"></td>
+                                        <td style="text-align: center; width: 45%; border:none; vertical-align: top;">
+                                            Kota, ${today}<br>Guru Mata Pelajaran<br><br><br><br><br>
+                                            ( ................................ )<br>NIP. ............................
+                                        </td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
                     `;
                     updateTokenDisplay();
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', timer: 2000, showConfirmButton: false });
+                } else {
+                    if (data.error && data.error.includes("Token habis")) {
+                        Swal.fire({
+                            title: '<span class="font-black text-red-600">TOKEN HABIS!</span>',
+                            html: `
+                                <div class="p-2">
+                                    <p class="text-gray-600 mb-5 font-semibold">Maaf Bapak/Ibu, kuota pembuatan soal Anda sudah habis. Silakan isi ulang untuk lanjut.</p>
+                                    <a href="https://wa.me/6282240400388?text=Halo%20Admin%20GuruBantuGuru,%20saya%20ingin%20isi%20ulang%20token" 
+                                       target="_blank" 
+                                       class="bg-[#25D366] text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-lg inline-block"
+                                       style="text-decoration: none;">
+                                       Hubungi Admin GuruBantuGuru
+                                    </a>
+                                </div>
+                            `,
+                            icon: 'warning',
+                            showConfirmButton: false,
+                            showCancelButton: true,
+                            cancelButtonText: 'Nanti Saja',
+                            borderRadius: '30px'
+                        });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Gagal', text: data.error, borderRadius: '25px' });
+                    }
                 }
-            } catch (err) { Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI.' }); }
-        }
-
-        // --- FUNGSI EKSPOR WORD YANG SUDAH DIRAPIKAN ---
-        function exportToWord() {
-            const subject = document.getElementById('subject').value || 'Soal_AI';
-            const level = document.getElementById('level').value || '-';
-            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-            
-            // Ambil teks soal dan bersihkan dari tag HTML tapi tetap simpan baris baru
-            const soalElement = document.getElementById('soalContent');
-            const soalLines = soalElement.innerText.split('\n').filter(line => line.trim() !== '');
-
-            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
-
-            const doc = new Document({
-                sections: [{
-                    properties: {
-                        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } // Margin 1 inci
-                    },
-                    children: [
-                        // KOP SURAT
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 24 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 28 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 28 })] }),
-                        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 18 })] }),
-                        new Paragraph({ border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } }, spacing: { after: 200 } }),
-
-                        // TABEL IDENTITAS (DIBUAT RAPI DENGAN KOLOM)
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: BorderStyle.NONE,
-                            rows: [
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ width: {size: 25, type: WidthType.PERCENTAGE}, children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: {size: 25, type: WidthType.PERCENTAGE}, children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: {size: 25, type: WidthType.PERCENTAGE}, children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 20 })] })] }),
-                                        new TableCell({ width: {size: 25, type: WidthType.PERCENTAGE}, children: [new Paragraph({ children: [new TextRun({ text: ": ....................", bold: true, size: 20 })] })] }),
-                                    ]
-                                }),
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 20 })] })] }),
-                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 20 })] })] }),
-                                    ]
-                                }),
-                            ]
-                        }),
-                        new Paragraph({ text: "", spacing: { after: 300 } }),
-
-                        // ISI SOAL DENGAN DETEKSI SPACING
-                        ...soalLines.map(line => {
-                            const isOption = /^[A-E]\./.test(line.trim()); // Deteksi A., B., C.
-                            return new Paragraph({
-                                children: [new TextRun({ text: line, size: 24 })],
-                                spacing: { before: isOption ? 0 : 200, line: 360 }, // Rapatkan pilihan ganda, beri jarak pada soal
-                                alignment: AlignmentType.JUSTIFY
-                            });
-                        }),
-
-                        new Paragraph({ text: "", spacing: { after: 600 } }),
-
-                        // TANDA TANGAN
-                        new Table({
-                            width: { size: 100, type: WidthType.PERCENTAGE },
-                            borders: BorderStyle.NONE,
-                            rows: [
-                                new TableRow({
-                                    children: [
-                                        new TableCell({ children: [
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 22 })] }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 22 })] }),
-                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
-                                        ] }),
-                                        new TableCell({ children: [
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 22 })] }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 22 })] }),
-                                            new Paragraph({ text: "", spacing: { after: 1000 } }),
-                                            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 22, underline: {} })] })
-                                        ] }),
-                                    ]
-                                })
-                            ]
-                        })
-                    ]
-                }]
-            });
-
-            Packer.toBlob(doc).then(blob => {
-                saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
-                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Word sudah rapi.', timer: 1500, showConfirmButton: false });
-            });
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Gagal terhubung ke AI. Pastikan token Anda mencukupi.', borderRadius: '25px' });
+            }
         }
 
         function exportToPDF() {
@@ -240,7 +353,130 @@
             html2pdf().set(opt).from(element).save();
         }
 
-        function confirmLogout() { Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true }).then((r) => { if (r.isConfirmed) window.location.href = '/auth/logout'; }); }
+        // FUNGSI EKSPOR WORD ASLI (NATIVE DOCX)
+        function exportToWord() {
+            const printableArea = document.getElementById('printableArea');
+            if (!printableArea) return;
+
+            const subject = document.getElementById('subject').value || 'Soal_AI';
+            const level = document.getElementById('level').value || '-';
+            const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+            // Mengambil teks soal saja agar tidak membawa sampah HTML
+            const soalText = document.getElementById('soalContent').innerText;
+
+            const { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } = docx;
+
+            const doc = new Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        // KOP SURAT
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Pemerintah Provinsi / Kota .....................", bold: true, size: 28 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Dinas Pendidikan dan Kebudayaan", bold: true, size: 32 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "NAMA SEKOLAH ASAL BAPAK/IBU", bold: true, size: 32 }),
+                            ],
+                        }),
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({ text: "Alamat: Jl. Contoh No. 123, Telp: (021) 123456, Website: www.sekolah.sch.id", italic: true, size: 20 }),
+                            ],
+                        }),
+                        new Paragraph({ text: "", border: { bottom: { color: "auto", space: 1, value: BorderStyle.DOUBLE, size: 24 } } }),
+                        new Paragraph({ text: "", spacing: { after: 200 } }),
+
+                        // TABEL IDENTITAS
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "MATA PELAJARAN", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + subject.toUpperCase(), bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "HARI / TANGGAL", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ..........................", bold: true, size: 22 })] })] }),
+                                    ],
+                                }),
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "KELAS / JENJANG", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": " + level, bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "WAKTU", bold: true, size: 22 })] })] }),
+                                        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: ": ........ MENIT", bold: true, size: 22 })] })] }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                        new Paragraph({ text: "", spacing: { after: 400 } }),
+
+                        // ISI SOAL (TEXT ASLI)
+                        ...soalText.split('\n').map(line => {
+                            return new Paragraph({
+                                children: [new TextRun({ text: line, size: 24 })],
+                                spacing: { after: 120 },
+                                alignment: AlignmentType.JUSTIFY
+                            });
+                        }),
+
+                        new Paragraph({ text: "", spacing: { after: 800 } }),
+
+                        // TANDA TANGAN
+                        new Table({
+                            width: { size: 100, type: WidthType.PERCENTAGE },
+                            borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                            rows: [
+                                new TableRow({
+                                    children: [
+                                        new TableCell({ 
+                                            children: [
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Mengetahui,", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Kepala Sekolah", size: 24 })] }),
+                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
+                                            ] 
+                                        }),
+                                        new TableCell({ 
+                                            children: [
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Kota, ${today}`, size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Guru Mata Pelajaran", size: 24 })] }),
+                                                new Paragraph({ text: "", spacing: { after: 1000 } }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "( ................................ )", size: 24 })] }),
+                                                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NIP. ............................", size: 24 })] }),
+                                            ] 
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, `Naskah_Soal_${subject.replace(/\s+/g, '_')}.docx`);
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'File Word asli telah diunduh.', timer: 2000, showConfirmButton: false });
+            });
+        }
+
+        function confirmLogout() {
+            Swal.fire({ title: 'Logout?', icon: 'question', showCancelButton: true, confirmButtonColor: '#0d1117' }).then((result) => { if (result.isConfirmed) window.location.href = '/auth/logout'; });
+        }
     </script>
 </body>
 </html>
