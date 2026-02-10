@@ -93,13 +93,14 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
     let teksSoal = "";
     let teksJawaban = "";
 
+    // PENYESUAIAN: Memastikan teksJawaban menangkap seluruh konten setelah batas (Kunci + Referensi Gambar)
     if (fullContent.includes("###BATAS_AKHIR_SOAL###")) {
         const splitParts = fullContent.split("###BATAS_AKHIR_SOAL###");
         teksSoal = splitParts[0].trim();
-        teksJawaban = splitParts[1].trim();
+        teksJawaban = splitParts[1].trim(); 
     } else {
         teksSoal = fullContent;
-        teksJawaban = "Kunci jawaban terlampir di dalam teks soal.";
+        teksJawaban = "Kunci jawaban dan referensi gambar terlampir di dalam teks soal.";
     }
 
     db.run(
@@ -130,7 +131,7 @@ router.post("/generate", upload.array("images[]", 10), async (req, res) => {
                 ${teksSoal} 
                 <br><hr class="my-6 border-dashed"><br> 
                 <div class="bg-gray-50 p-4 rounded-xl">
-                    <strong class="text-green-600">Kunci Jawaban & Pembahasan:</strong><br> 
+                    <strong class="text-green-600">Kunci Jawaban, Pembahasan & Referensi Gambar:</strong><br> 
                     ${teksJawaban}
                 </div>`,
               historyId: this.lastID,
